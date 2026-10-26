@@ -81,9 +81,25 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;backgr
 .step .tick{color:var(--teal);margin-right:4px}
 
 /* ---------- 본문 ---------- */
+/* 아래 고정 페이지 이동 바 */
+.pagenav{
+  position:fixed;left:0;right:0;bottom:0;z-index:25;
+  background:var(--card);border-top:1px solid var(--line);
+  padding-block:10px;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.pagenav-in{max-width:1060px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.pagenav .mid{flex:1;min-width:0;text-align:center;line-height:1.3}
+.pagenav .pos{font-size:12.5px;font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.pagenav .hint{display:block;font-size:11.5px;color:var(--amber)}
+.pagenav .btn{white-space:nowrap}
+@media (max-width:420px){ .pagenav .btn{padding:10px 13px} }
+
 main{
   max-width:1060px;margin:0 auto;
-  padding-block:24px 72px;
+  padding-block:24px 104px;
   padding-left:max(16px,env(safe-area-inset-left,0px));
   padding-right:max(16px,env(safe-area-inset-right,0px));
 }
@@ -360,10 +376,7 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
       <div class="stack tight" id="sent-list"></div>
       <div class="spread">
         <span class="muted" id="total-wc"></span>
-        <div class="row">
-          <button class="btn quiet" id="btn-polish">원고 다듬기</button>
-          <button class="btn" id="btn-to-2">리허설로 →</button>
-        </div>
+        <button class="btn quiet" id="btn-polish">원고 다듬기</button>
       </div>
       <div id="script-msg" hidden></div>
       <div id="polish-wrap" hidden class="stack tight">
@@ -488,8 +501,6 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
     <div class="card stack">
       <div class="row">
         <button class="btn ghost" id="btn-ai-speech">AI 말하기 피드백</button>
-        <button class="btn" id="btn-to-4">자기점검으로 →</button>
-        <button class="btn quiet" id="btn-back-2">다시 연습하기</button>
       </div>
       <div id="fb-speech" hidden></div>
     </div>
@@ -509,7 +520,6 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
       <div class="field"><label for="r1">지난번보다 바꾼 것</label><textarea class="reflect" id="r1" placeholder="한국어로 한두 문장"></textarea></div>
       <div class="field"><label for="r2">아직 어려운 것</label><textarea class="reflect" id="r2" placeholder="예) 두 번째 문장에서 자꾸 막힌다"></textarea></div>
       <div class="field"><label for="r3">다음에 할 것</label><textarea class="reflect" id="r3" placeholder="예) 두 번째 문장만 세 번 더 연습하겠다"></textarea></div>
-      <div class="row"><button class="btn" id="btn-to-5">제출 화면으로 →</button></div>
     </div>
   </section>
 
@@ -520,14 +530,13 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
       <div id="review" class="stack"></div>
       <div class="row">
         <button class="btn lg" id="btn-submit">선생님께 제출하기</button>
-        <button class="btn quiet" id="btn-back-1">원고 고치기</button>
       </div>
       <div id="submit-msg" hidden></div>
     </div>
   </section>
 
   <!-- ===== 완료 ===== -->
-  <section id="s6" hidden>
+  <section id="s6" hidden data-nonav>
     <div class="card done stack">
       <div class="mark">✓</div>
       <h2>제출되었습니다</h2>
@@ -536,6 +545,17 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
     </div>
   </section>
 </main>
+
+<nav class="pagenav" id="pagenav" hidden>
+  <div class="pagenav-in">
+    <button class="btn quiet" id="nav-prev">← 이전</button>
+    <div class="mid">
+      <span class="pos" id="nav-pos"></span>
+      <span class="hint" id="nav-hint"></span>
+    </div>
+    <button class="btn" id="nav-next">다음 →</button>
+  </div>
+</nav>
 
 <script>
 /* =========================================================
@@ -651,22 +671,73 @@ function load(){
    5) 화면 전환
    ========================================================= */
 let step = 0;
+const LAST_STEP = 5;
+const STEP_NAME = { 1:'원고 다듬기', 2:'리허설', 3:'리포트', 4:'자기점검', 5:'제출' };
+
+/** 그 단계로 갈 수 있는지, 못 가면 이유를 함께 돌려줍니다. */
+function canGo(n){
+  if(n < 1 || n > LAST_STEP) return { ok:false, why:'' };
+  if(n >= 2 && !hasScript())  return { ok:false, why:'세 문장을 먼저 채워 주세요' };
+  if(n === 3 && !S.last)      return { ok:false, why:'한 번 말해 봐야 리포트가 나와요' };
+  return { ok:true, why:'' };
+}
+
 function go(n){
+  if(n >= 1 && n <= LAST_STEP && !canGo(n).ok) return;
+  if(recording) stopRec();
+  stopSpeak();
   step = n;
   for(let i=0;i<=6;i++){ const el=$('#s'+i); if(el) el.hidden = (i!==n); }
   $('#stepbar').hidden = (n===0 || n===6);
   $$('#stepbar .step').forEach(b=>{
     const t = +b.dataset.go;
     b.setAttribute('aria-current', String(t===n));
-    b.disabled = (t>1 && !hasScript()) || (t===3 && !S.last);
+    b.disabled = !canGo(t).ok;
   });
   if(n===2) setupStage();
   if(n===3) renderReport();
   if(n===4) renderChecks();
   if(n===5) renderReview();
-  window.scrollTo({top:0,behavior:'instant'});
+  renderNav();
+  window.scrollTo({ top:0, behavior:'instant' });
 }
 $$('#stepbar .step').forEach(b=> b.addEventListener('click',()=>go(+b.dataset.go)) );
+
+/* --- 아래 고정 이전/다음 바 --- */
+function renderNav(){
+  const bar = $('#pagenav');
+  const show = step >= 1 && step <= LAST_STEP;
+  bar.hidden = !show;
+  if(!show) return;
+
+  $('#nav-pos').textContent = step + ' / ' + LAST_STEP + '  ·  ' + STEP_NAME[step];
+
+  const prev = $('#nav-prev');
+  prev.disabled = (step <= 1);
+  prev.textContent = step > 1 ? ('← ' + STEP_NAME[step-1]) : '← 이전';
+
+  const next = $('#nav-next');
+  if(step === LAST_STEP){
+    next.hidden = true;
+    $('#nav-hint').textContent = '';
+  }else{
+    next.hidden = false;
+    const c = canGo(step+1);
+    next.textContent = STEP_NAME[step+1] + ' →';
+    next.disabled = !c.ok;
+    $('#nav-hint').textContent = c.ok ? '' : c.why;
+  }
+}
+$('#nav-prev').addEventListener('click', ()=>{ if(step>1) go(step-1); });
+$('#nav-next').addEventListener('click', ()=>{ if(step<LAST_STEP) go(step+1); });
+
+/* 키보드 ← → 로도 넘길 수 있습니다 */
+document.addEventListener('keydown', e=>{
+  if(step<1 || step>LAST_STEP || recording) return;
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+  if(e.key === 'ArrowRight' && step < LAST_STEP && canGo(step+1).ok){ e.preventDefault(); go(step+1); }
+  if(e.key === 'ArrowLeft'  && step > 1){ e.preventDefault(); go(step-1); }
+});
 
 /* =========================================================
    6) 입장
@@ -876,12 +947,9 @@ function updateMeta(i){
   $('#total-wc').textContent = `전체 ${total}단어 · 예상 ${estSec(total)}초 (목표 ${CONFIG.GOAL_SECONDS}초)`;
 }
 function refreshGates(){
-  $$('#stepbar .step').forEach(b=>{ const t=+b.dataset.go; b.disabled=(t>1&&!hasScript())||(t===3&&!S.last); });
+  $$('#stepbar .step').forEach(b=>{ const t=+b.dataset.go; b.disabled = !canGo(t).ok; });
+  renderNav();
 }
-$('#btn-to-2').addEventListener('click', ()=>{
-  if(!hasScript()){ alertBox('#script-msg','세 문장을 모두 채운 뒤에 연습할 수 있어요.','err'); return; }
-  stopSpeak(); go(2);
-});
 
 /* --- 다듬기 (기기 안에서 · AI 없음) --- */
 function findIssues(){
@@ -1308,7 +1376,6 @@ $('#btn-reset').addEventListener('click', ()=>{
 });
 $('#btn-again').addEventListener('click', ()=>{ $('#btn-reset').click(); window.scrollTo({top:0,behavior:'smooth'}); });
 $('#btn-to-3').addEventListener('click', ()=>go(3));
-$('#btn-back-2').addEventListener('click', ()=>go(2));
 document.addEventListener('keydown', e=>{
   if(e.code==='Space' && step===2 && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){
     e.preventDefault(); recording ? stopRec() : startCountdown();
@@ -1452,9 +1519,6 @@ function renderChecks(){
   });
 }
 ['r1','r2','r3'].forEach(k=> $('#'+k).addEventListener('input', e=>{ S.reflect[k]=e.target.value; save(); }));
-$('#btn-to-4').addEventListener('click', ()=>go(4));
-$('#btn-to-5').addEventListener('click', ()=>go(5));
-$('#btn-back-1').addEventListener('click', ()=>go(1));
 
 /* =========================================================
    11) 5단계 — 제출
