@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>3-Sentence Speaking</title>
+<title>말하기 연습하기</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
@@ -38,6 +38,9 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+/* 이 줄이 없으면 .stack{display:flex} 같은 규칙이 hidden 속성을 이겨서
+   숨겨야 할 단계 화면이 전부 한 페이지에 쌓입니다. */
+[hidden]{display:none!important}
 html,body{margin:0;padding:0}
 body{
   background:var(--paper); color:var(--ink);
@@ -285,7 +288,7 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
 
 <header class="topbar">
   <div class="topbar-in">
-    <div class="brand">3문장 말하기<span>3-Sentence Speaking</span></div>
+    <div class="brand">말하기 연습하기<span>Speaking Practice</span></div>
     <div class="topright">
       <span class="round-pill" id="round-pill" hidden></span>
       <span class="who" id="who" hidden></span>
@@ -311,7 +314,7 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
   <section id="s0" class="card enter">
     <div class="stack">
       <div>
-        <h2>오늘 수업에 들어왔어요</h2>
+        <h2>준비하기</h2>
         <p class="lead">학년·번호·이름을 넣고, 몇 차 연습인지 고르세요. 쓴 내용은 이 기기에 자동 저장됩니다.</p>
       </div>
 
