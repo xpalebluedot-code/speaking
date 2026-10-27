@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>말하기 연습 현황판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400&display=swap">
+<style>
+/* 레이아웃: 상단 요약 띠 + 번호 격자 + 누르면 열리는 학생 상세 */
+:root{
+  --ink:#16202b; --ink-soft:#4a5a6a; --ink-faint:#8697a6;
+  --paper:#f5f7f9; --card:#ffffff; --line:#dde4ea; --sunk:#f8fafb;
+  --teal:#0d7a6f; --teal-soft:#e3f2ef; --teal-line:#bfe0da;
+  --amber:#b4740f; --amber-soft:#fbf0dc; --amber-line:#e6cfa3;
+  --red:#b3261e; --red-soft:#fbe9e7; --red-line:#f0c4bf;
+  --font-ui:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-en:'Source Serif 4',Georgia,serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ink:#e6edf3; --ink-soft:#a9b8c6; --ink-faint:#74869a;
+    --paper:#10171e; --card:#18212a; --line:#2b3845; --sunk:#141c24;
+    --teal:#3fb8a8; --teal-soft:#13302d; --teal-line:#245049;
+    --amber:#dba54a; --amber-soft:#30260f; --amber-line:#574521;
+    --red:#e8776c; --red-soft:#331a17; --red-line:#5c2f2a;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e6edf3; --ink-soft:#a9b8c6; --ink-faint:#74869a;
+  --paper:#10171e; --card:#18212a; --line:#2b3845; --sunk:#141c24;
+  --teal:#3fb8a8; --teal-soft:#13302d; --teal-line:#245049;
+  --amber:#dba54a; --amber-soft:#30260f; --amber-line:#574521;
+  --red:#e8776c; --red-soft:#331a17; --red-line:#5c2f2a;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-ui);font-size:15px;line-height:1.6;-webkit-text-size-adjust:100%}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+input,select{font-family:inherit;font-size:inherit;color:inherit;background:var(--card)}
+
+.topbar{position:sticky;top:0;z-index:20;background:#111b24;color:#eef3f7;padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.topbar-in{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:16px;letter-spacing:-.01em;white-space:nowrap}
+.brand span{font-family:var(--font-en);font-weight:400;opacity:.6;margin-left:8px;font-size:14px}
+.topright{margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.tick{font-size:11.5px;color:#9fb3c4;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tbtn{border:1px solid #33434f;background:transparent;color:#cfd9e2;border-radius:6px;padding:4px 10px;font-size:12px}
+.tbtn.on{background:#1d5c54;border-color:#1d5c54;color:#d8f2ec;font-weight:700}
+
+main{max-width:1100px;margin:0 auto;padding-block:20px 72px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.stack.tight{gap:9px}
+h2{font-size:19px;margin:0;letter-spacing:-.01em}
+h3{font-size:12px;margin:0;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);font-weight:700}
+.muted{color:var(--ink-faint);font-size:13px}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.spread{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.btn{border:1px solid var(--teal);background:var(--teal);color:#fff;border-radius:7px;padding:9px 16px;font-weight:700}
+.btn.quiet{background:transparent;color:var(--ink-soft);border-color:var(--line)}
+.btn.sm{padding:5px 11px;font-size:12.5px;border-radius:6px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:focus-visible,.tbtn:focus-visible,.tile:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.notice{border-radius:8px;padding:11px 13px;font-size:13.5px;border:1px solid}
+.notice.err{background:var(--red-soft);border-color:var(--red-line);color:var(--red)}
+.notice.info{background:var(--teal-soft);border-color:var(--teal-line);color:var(--teal)}
+
+/* 들어가기 */
+.gate{max-width:380px;margin:48px auto}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:700;color:var(--ink-soft)}
+.field input,.field select{border:1px solid var(--line);border-radius:7px;padding:10px 12px;width:100%}
+
+/* 요약 */
+.sums{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px}
+.sum{border:1px solid var(--line);border-radius:9px;padding:11px 13px;background:var(--card)}
+.sum .k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);font-weight:700}
+.sum .v{font-size:27px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.15}
+.sum .u{font-size:13px;font-weight:400;color:var(--ink-faint);margin-left:2px}
+.sum.done .v{color:var(--teal)} .sum.miss .v{color:var(--red)} .sum.work .v{color:var(--amber)}
+
+/* 번호 격자 */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(126px,1fr));gap:9px}
+.tile{text-align:left;border:1px solid var(--line);border-radius:9px;padding:10px 11px;background:var(--card);
+  display:flex;flex-direction:column;gap:3px;min-width:0;transition:transform .08s ease}
+.tile:hover{transform:translateY(-1px)}
+.tile .n{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.tile .nm{font-size:13px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile .meta{font-size:11.5px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+.tile .bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:3px}
+.tile .bar i{display:block;height:100%;background:var(--teal)}
+.tile.none{border-style:dashed;background:transparent;cursor:default}
+.tile.none:hover{transform:none}
+.tile.none .n{color:var(--ink-faint)}
+.tile.work{border-color:var(--amber-line);background:var(--amber-soft)}
+.tile.done{border-color:var(--teal-line);background:var(--teal-soft)}
+.tile.on{outline:2px solid var(--teal);outline-offset:1px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.dot.work{background:var(--amber)} .dot.done{background:var(--teal)} .dot.none{background:var(--ink-faint)}
+
+.missing{display:flex;gap:6px;flex-wrap:wrap}
+.mnum{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;border:1px dashed var(--red-line);
+  background:var(--red-soft);color:var(--red);border-radius:6px;padding:3px 10px}
+
+/* 학생 상세 */
+.detail{border:1px solid var(--teal-line);border-radius:10px;background:var(--card);overflow:hidden}
+.detail .head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 15px;background:var(--teal-soft);border-bottom:1px solid var(--teal-line)}
+.detail .head .who{font-weight:700}
+.detail .body{padding:15px;display:flex;flex-direction:column;gap:14px}
+.sent{font-family:var(--font-en);font-size:16.5px;line-height:1.8}
+.sent .no{font-family:var(--font-ui);font-weight:700;color:var(--ink-faint);font-size:13px;margin-right:5px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:13.5px;align-items:baseline}
+.kv .k{color:var(--ink-faint);white-space:nowrap}
+.pill{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill.work{background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber-line)}
+.pill.done{background:var(--teal);color:#fff}
+.said{font-family:var(--font-en);font-size:15px;color:var(--ink-soft);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:11px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ==============================================================
+     말하기 연습 현황판 — 선생님용
+     학생 앱(index.html)과 같은 폴더에 두고 teacher.html 로 엽니다.
+     비밀번호는 Apps Script 스크립트 속성의 TEACHER_PIN 입니다.
+     ============================================================== -->
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">말하기 연습 현황판<span>Live</span></div>
+    <div class="topright" id="topright" hidden>
+      <span class="tick" id="tick"></span>
+      <button class="tbtn on" id="btn-auto">자동 새로고침 켬</button>
+      <button class="tbtn" id="btn-now">지금 새로고침</button>
+      <button class="tbtn" id="btn-theme">🌙</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- 들어가기 -->
+  <section id="gate" class="card gate">
+    <div class="stack">
+      <div>
+        <h2>현황판 열기</h2>
+        <p class="muted" style="margin:4px 0 0">선생님 비밀번호(TEACHER_PIN)를 넣으세요. 이 기기에 기억해 둡니다.</p>
+      </div>
+      <div class="field">
+        <label for="f-grade">학년</label>
+        <select id="f-grade"><option value="1">1학년</option><option value="2">2학년</option></select>
+      </div>
+      <div class="field">
+        <label for="f-pin">비밀번호</label>
+        <input id="f-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="네 자리 숫자">
+      </div>
+      <button class="btn" id="btn-enter">열기</button>
+      <div id="gate-msg" hidden></div>
+    </div>
+  </section>
+
+  <!-- 현황판 -->
+  <section id="board" class="stack" hidden>
+    <div class="card stack tight">
+      <div class="spread">
+        <h3 id="board-title">진행 현황</h3>
+        <div class="row">
+          <select id="pick-grade" aria-label="학년">
+            <option value="1">1학년</option><option value="2">2학년</option>
+          </select>
+        </div>
+      </div>
+      <div class="sums" id="sums"></div>
+    </div>
+
+    <div class="card stack tight" id="missing-card" hidden>
+      <h3>아직 안 들어온 번호</h3>
+      <div class="missing" id="missing"></div>
+    </div>
+
+    <div class="card stack tight">
+      <div class="spread">
+        <h3>번호별 현황</h3>
+        <span class="muted">
+          <span class="dot done"></span>다 했어요
+          <span class="dot work" style="margin-left:9px"></span>하는 중
+          <span class="dot none" style="margin-left:9px"></span>미참여
+        </span>
+      </div>
+      <div class="grid" id="grid"></div>
+      <p class="muted">번호를 누르면 그 학생이 쓴 문장과 성찰을 볼 수 있어요.</p>
+    </div>
+
+    <div id="detail-wrap" hidden></div>
+    <div id="board-msg" hidden></div>
+  </section>
+</main>
+
+<script>
+/* =========================================================
+   설정 — 학생 앱(index.html)의 API_URL 과 같은 주소여야 합니다
+   ========================================================= */
+const API_URL = 'https://script.google.com/macros/s/AKfycbz4tfEY-yr8Yqw96ygvhQILIAfa5_y_e4KrVgmq_UyyNIfUUIKyKQwEv9k101m3M9A_aA/exec';
+const REFRESH_MS = 20000;   // 자동 새로고침 간격
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let PIN='', GRADE=1, DATA=null, SEL=null, autoOn=true, timer=null, fetching=false;
+
+/* ---------- 테마 ---------- */
+(function(){
+  const b=$('#btn-theme');
+  let t=null; try{ t=localStorage.getItem('s3s:theme'); }catch(e){}
+  if(t) document.documentElement.setAttribute('data-theme',t);
+  const dark=()=>document.documentElement.getAttribute('data-theme')==='dark'
+    || (!document.documentElement.getAttribute('data-theme') && matchMedia('(prefers-color-scheme:dark)').matches);
+  const paint=()=>{ b.textContent = dark()?'☀️':'🌙'; };
+  paint();
+  b.addEventListener('click',()=>{
+    const next = dark()?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{ localStorage.setItem('s3s:theme',next); }catch(e){}
+    paint();
+  });
+})();
+
+/* ---------- 들어가기 ---------- */
+try{
+  const saved = localStorage.getItem('s3s:pin');
+  if(saved) $('#f-pin').value = saved;
+  const g = localStorage.getItem('s3s:grade');
+  if(g){ $('#f-grade').value = g; }
+}catch(e){}
+
+$('#f-pin').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#btn-enter').click(); });
+
+$('#btn-enter').addEventListener('click', async ()=>{
+  const pin = $('#f-pin').value.trim();
+  if(!pin){ $('#f-pin').focus(); return; }
+  const btn = $('#btn-enter'); btn.disabled=true; btn.textContent='확인 중…';
+  PIN = pin; GRADE = +$('#f-grade').value;
+  const ok = await load(true);
+  btn.disabled=false; btn.textContent='열기';
+  if(!ok) return;
+  try{ localStorage.setItem('s3s:pin',pin); localStorage.setItem('s3s:grade',String(GRADE)); }catch(e){}
+  $('#gate').hidden=true; $('#board').hidden=false; $('#topright').hidden=false;
+  $('#pick-grade').value = String(GRADE);
+  startAuto();
+});
+
+$('#pick-grade').addEventListener('change', ()=>{
+  GRADE = +$('#pick-grade').value; SEL=null;
+  try{ localStorage.setItem('s3s:grade',String(GRADE)); }catch(e){}
+  load();
+});
+
+/* ---------- 불러오기 ---------- */
+async function load(isGate){
+  if(fetching) return false;
+  fetching = true;
+  try{
+    const res = await fetch(API_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'roster', pin:PIN, grade:GRADE })
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const r = await res.json();
+    if(!r || r.ok!==true) throw new Error(r && r.error ? r.error : '응답을 받지 못했어요');
+    DATA = r; render();
+    $('#board-msg').hidden = true;
+    return true;
+  }catch(e){
+    const sel = isGate ? '#gate-msg' : '#board-msg';
+    const el = $(sel); el.hidden=false; el.className='notice err';
+    el.textContent = (isGate ? '열지 못했어요: ' : '새로고침하지 못했어요: ') + e.message;
+    return false;
+  }finally{ fetching = false; }
+}
+
+function startAuto(){
+  clearInterval(timer);
+  if(autoOn) timer = setInterval(()=>load(), REFRESH_MS);
+}
+$('#btn-auto').addEventListener('click', ()=>{
+  autoOn = !autoOn;
+  $('#btn-auto').classList.toggle('on', autoOn);
+  $('#btn-auto').textContent = autoOn ? '자동 새로고침 켬' : '자동 새로고침 끔';
+  startAuto();
+});
+$('#btn-now').addEventListener('click', ()=>load());
+
+/* ---------- 그리기 ---------- */
+function render(){
+  if(!DATA) return;
+  const size = DATA.rosterSize || 30;
+  const by = {};
+  (DATA.students||[]).forEach(s=>{ by[Number(s.num)] = s; });
+
+  const nums = Array.from({length:size},(_,i)=>i+1);
+  const inList  = nums.filter(n=>by[n]);
+  const missing = nums.filter(n=>!by[n]);
+  const done    = inList.filter(n=>by[n].status==='제출함');
+  const totalTry = inList.reduce((a,n)=>a+(Number(by[n].attempts)||0),0);
+  const hideTried = inList.filter(n=>(Number(by[n].hideCount)||0)>0);
+
+  $('#board-title').textContent = `${DATA.grade}학년 진행 현황 · ${DATA.activity||''}`;
+
+  $('#sums').innerHTML = `
+    <div class="sum"><div class="k">전체</div><div class="v">${size}<span class="u">명</span></div></div>
+    <div class="sum work"><div class="k">들어옴</div><div class="v">${inList.length}<span class="u">명</span></div></div>
+    <div class="sum miss"><div class="k">미참여</div><div class="v">${missing.length}<span class="u">명</span></div></div>
+    <div class="sum done"><div class="k">다 했어요</div><div class="v">${done.length}<span class="u">명</span></div></div>
+    <div class="sum"><div class="k">평균 연습</div><div class="v">${inList.length?(totalTry/inList.length).toFixed(1):'0'}<span class="u">회</span></div></div>
+    <div class="sum"><div class="k">원고 숨김 시도</div><div class="v">${hideTried.length}<span class="u">명</span></div></div>`;
+
+  $('#missing-card').hidden = !missing.length;
+  $('#missing').innerHTML = missing.map(n=>`<span class="mnum">${n}</span>`).join('');
+
+  $('#grid').innerHTML = nums.map(n=>{
+    const s = by[n];
+    if(!s) return `<div class="tile none"><div class="n">${n}</div><div class="meta">미참여</div></div>`;
+    const cls = s.status==='제출함' ? 'done' : 'work';
+    const best = Math.max(Number(s.accHide)||0, Number(s.accShow)||0);
+    return `<button class="tile ${cls} ${SEL===n?'on':''}" data-n="${n}">
+      <div class="n">${n}</div>
+      <div class="nm">${esc(s.name)}</div>
+      <div class="meta">연습 ${Number(s.attempts)||0}회${(Number(s.hideCount)||0)?` · 숨김 ${s.hideCount}`:''}</div>
+      <div class="bar"><i style="width:${Math.min(100,best)}%"></i></div>
+      <div class="meta">${best?best+'%':'—'}</div>
+    </button>`;
+  }).join('');
+  $$('#grid .tile[data-n]').forEach(b=> b.addEventListener('click', ()=>{
+    SEL = (SEL===+b.dataset.n) ? null : +b.dataset.n;
+    render();
+  }));
+
+  renderDetail(by[SEL]);
+
+  const t = new Date();
+  $('#tick').textContent = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} 기준`;
+}
+
+function renderDetail(s){
+  const w = $('#detail-wrap');
+  if(!s){ w.hidden = true; w.innerHTML=''; return; }
+  w.hidden = false;
+  const rf = s.reflect || [];
+  const line = (k,v)=> v ? `<div class="k">${k}</div><div>${esc(v)}</div>` : '';
+  w.innerHTML = `
+    <div class="detail">
+      <div class="head">
+        <span class="who">${s.num}번 ${esc(s.name)}</span>
+        <span class="pill ${s.status==='제출함'?'done':'work'}">${esc(s.status||'작성 중')}</span>
+        <span class="muted">연습 ${Number(s.attempts)||0}회 · 원고 숨김 ${Number(s.hideCount)||0}회 · 점검 ${esc(s.checks||'–')}</span>
+        <button class="btn quiet sm" id="btn-close" style="margin-left:auto">닫기</button>
+      </div>
+      <div class="body">
+        <div>
+          <h3 style="margin-bottom:6px">세 문장</h3>
+          <div class="sent">${(s.sentences||[]).map((x,i)=>
+            x ? `<div><span class="no">${i+1}.</span>${esc(x)}</div>` : '').join('') || '<span class="muted">아직 없음</span>'}</div>
+        </div>
+        <div>
+          <h3 style="margin-bottom:6px">기록</h3>
+          <div class="kv">
+            ${line('원고 보고', (s.accShow||s.accShow===0) && s.accShow!=='' ? `${s.accShow}% · ${s.secShow}초` : '')}
+            ${line('원고 숨기고', (s.accHide||s.accHide===0) && s.accHide!=='' ? `${s.accHide}% · ${s.secHide}초 · 힌트 ${s.hints||0}회` : '')}
+            ${line('마지막 방식', s.lastMode)}
+          </div>
+        </div>
+        ${(rf[0]||rf[1]||rf[2]) ? `<div>
+          <h3 style="margin-bottom:6px">성찰</h3>
+          <div class="kv">
+            ${line('바꾼 것', rf[0])}
+            ${line('어려운 것', rf[1])}
+            ${line('다음에 할 것', rf[2])}
+          </div></div>` : ''}
+        ${s.transcript ? `<div>
+          <h3 style="margin-bottom:6px">마지막으로 말한 내용</h3>
+          <div class="said">${esc(s.transcript)}</div></div>` : ''}
+      </div>
+    </div>`;
+  $('#btn-close').addEventListener('click', ()=>{ SEL=null; render(); });
+}
+</script>
+</body>
+</html>
