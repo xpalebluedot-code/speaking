@@ -64,6 +64,10 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;backgr
 .topright{margin-left:auto;display:flex;align-items:center;gap:10px}
 .who{font-size:13px;opacity:.85;white-space:nowrap}
 .round-pill{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:#2a3a48;color:#cfe3df}
+.savetag{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.savetag.work{background:#2a3a48;color:#9fb3c4}
+.savetag.ok{background:#15403a;color:#7fd8c6}
+.savetag.bad{background:#4a2420;color:#f0a79e}
 .theme-btn{border:1px solid #33434f;background:transparent;color:#cfd9e2;border-radius:6px;padding:4px 10px;font-size:12px}
 
 .steps{
@@ -194,17 +198,22 @@ p.lead{margin:0;color:var(--ink-soft)}
 .prow .ptext{flex:1;min-width:0;font-family:var(--font-en);font-size:18px;line-height:1.95}
 .preview .pause{color:var(--teal);font-weight:700;padding:0 3px;user-select:none}
 .preview .stress{font-weight:600;text-decoration:underline;text-underline-offset:3px}
-.chunk{border-radius:5px;padding:1px 4px;margin:0 -1px;cursor:pointer;transition:background .12s ease}
-.chunk:hover{background:rgba(13,122,111,.14)}
+.chunk{border-radius:5px;padding:1px 3px;margin:0 -1px;transition:background .12s ease}
 .chunk.on{background:var(--teal);color:#fff}
 .chunk.on .stress{text-decoration-color:#fff}
-.chunk:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+.preview.by-chunk .chunk{cursor:pointer}
+.preview.by-chunk .chunk:hover{background:rgba(13,122,111,.14)}
+.wd{border-radius:4px;padding:0 1px}
+.preview.by-word .wd{cursor:pointer}
+.preview.by-word .wd:hover{background:rgba(13,122,111,.18)}
+.wd.on{background:var(--teal);color:#fff}
+.wd.on .stress,.wd .stress{text-decoration-color:currentColor}
+.prow.on .ptext{background:rgba(13,122,111,.10);border-radius:6px}
+.chunk:focus-visible,.wd:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
 .pause-k{color:var(--teal);font-weight:700;font-family:var(--font-en)}
 #tts-rate{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12.5px}
 
 /* ---------- 리허설 ---------- */
-.practice{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:16px;align-items:start}
-@media (max-width:820px){.practice{grid-template-columns:minmax(0,1fr)}}
 .miclamp{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--sunk);padding:18px 16px;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center}
 .miclamp .count{position:absolute;inset:0;display:grid;place-items:center;border-radius:10px;background:var(--ink);color:var(--card);font-size:72px;font-weight:700;font-variant-numeric:tabular-nums}
 .miclamp .meter{width:100%}
@@ -226,10 +235,15 @@ p.lead{margin:0;color:var(--ink-soft)}
 .script-box .s:last-child{margin-bottom:0}
 .script-box .w{color:var(--ink-faint);transition:color .12s ease}
 .script-box .w.hit{color:var(--ink);font-weight:600}
-.script-box .w.miss{color:var(--red);text-decoration:line-through}
+.script-box .w.miss{color:var(--red);text-decoration:underline;text-decoration-color:var(--red);text-decoration-thickness:2px;text-underline-offset:3px}
 .script-box.blind .w{background:var(--line);color:transparent!important;border-radius:3px;text-decoration:none}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-faint)}
+.legend .s{display:inline-flex;align-items:center;gap:5px}
+.ex{font-family:var(--font-en);font-size:14px}
+.ex.miss{color:var(--red);text-decoration:underline;text-decoration-color:var(--red);text-decoration-thickness:2px;text-underline-offset:3px}
+.ex.hit{color:var(--ink);font-weight:600}
 .script-box .pause{color:var(--teal)}
-.hintbox{border:1px dashed var(--amber-line);background:var(--amber-soft);color:var(--amber);border-radius:8px;padding:12px;font-family:var(--font-en);font-size:20px;text-align:center;font-weight:600}
+.hintbox{border:1px dashed var(--amber-line);background:var(--amber-soft);color:var(--amber);border-radius:8px;padding:14px;font-family:var(--font-en);font-size:17px;line-height:1.7;font-weight:600}
 
 .live{border:1px dashed var(--line);border-radius:9px;background:var(--sunk);padding:14px;min-height:62px;font-family:var(--font-en);font-size:16px;color:var(--ink-soft)}
 .live .interim{color:var(--ink-faint)}
@@ -255,39 +269,6 @@ p.lead{margin:0;color:var(--ink-soft)}
 /* 멈춤 지점 */
 .pauses{display:flex;gap:6px;flex-wrap:wrap}
 .ptag{font-size:12px;font-variant-numeric:tabular-nums;border:1px solid var(--amber-line);background:var(--amber-soft);color:var(--amber);border-radius:6px;padding:3px 9px}
-
-/* 미션 */
-.mission{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--amber-line);background:var(--amber-soft);border-radius:9px;padding:13px 15px}
-.mission .ic{font-size:19px;line-height:1.2}
-.mission .body{flex:1;min-width:0}
-.mission .k{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--amber)}
-.mission .v{font-size:14.5px;font-weight:500;margin-top:3px}
-.mission.done{border-color:var(--teal-line);background:var(--teal-soft)}
-.mission.done .k{color:var(--teal)}
-.stamp{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;border:1px solid}
-.stamp.ok{background:var(--teal);color:#fff;border-color:var(--teal)}
-.stamp.retry{background:transparent;color:var(--amber);border-color:var(--amber-line)}
-
-.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media (max-width:640px){.compare{grid-template-columns:1fr}}
-.pane{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--sunk);min-width:0}
-.pane .k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
-.pane .t{font-family:var(--font-en);font-size:16px;line-height:1.7;overflow-wrap:break-word}
-.pane .t .miss{color:var(--red);text-decoration:underline wavy var(--red) 1.5px}
-
-table.tb{width:100%;border-collapse:collapse;font-size:13.5px}
-table.tb th,table.tb td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
-table.tb th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
-table.tb td{font-variant-numeric:tabular-nums}
-.tablewrap{overflow-x:auto}
-.delta.up{color:var(--teal);font-weight:700} .delta.down{color:var(--red);font-weight:700}
-
-.words{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:10px}
-.wcard{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--card);min-width:0}
-.wcard .w{font-family:var(--font-en);font-size:20px;font-weight:600;overflow-wrap:break-word}
-.wcard .c{font-size:12px;color:var(--ink-faint);margin-bottom:8px}
-.wcard.done{border-color:var(--teal-line);background:var(--teal-soft)}
-.wcard .st{font-size:12px;font-weight:700;color:var(--teal)}
 
 /* ---------- 점검 ---------- */
 .check{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--card);cursor:pointer}
@@ -315,6 +296,7 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
   <div class="topbar-in">
     <div class="brand">말하기 연습하기<span>Speaking Practice</span></div>
     <div class="topright">
+      <span class="savetag" id="save-state" hidden></span>
       <span class="round-pill" id="round-pill" hidden></span>
       <span class="who" id="who" hidden></span>
       <button class="theme-btn" id="theme-btn" type="button">🌙 어둡게</button>
@@ -413,6 +395,10 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
       <div class="spread">
         <h3>끊어 읽기 · 소리로 듣기</h3>
         <div class="row">
+          <div class="seg" id="seg-unit" role="group" aria-label="누르면 들을 단위">
+            <button type="button" data-unit="chunk" class="on">덩어리</button>
+            <button type="button" data-unit="word">단어</button>
+          </div>
           <select id="tts-rate" aria-label="말 속도">
             <option value="0.7">느리게</option>
             <option value="0.85" selected>보통</option>
@@ -425,7 +411,7 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
       <div class="preview" id="preview"></div>
       <p class="muted">
         <span class="pause-k">/</span> 짧게 쉬기 · <span class="pause-k">//</span> 문장 끝 숨 고르기 · <u>밑줄</u>은 힘줘서 말할 단어입니다.
-        <b>끊어 읽기 덩어리를 누르면 그 부분만 들을 수 있어요.</b> 들으면서 따라 읽어 보세요.
+        <b id="unit-help">덩어리를 누르면 그 부분만 들을 수 있어요.</b> 들으면서 따라 읽어 보세요.
       </p>
       <p class="muted" id="tts-note" hidden></p>
     </div>
@@ -433,53 +419,53 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
 
   <!-- ===== 2. 리허설 ===== -->
   <section id="s2" class="stack" hidden>
-    <div class="practice">
-      <div class="card stack">
-        <h3>말하기</h3>
-        <div class="miclamp">
-          <div class="clock" id="clock">0:00</div>
-          <div class="goal" id="goal-txt"></div>
-          <div class="count" id="countdown" hidden>3</div>
+    <!-- ① 원고가 먼저 -->
+    <div class="card stack tight" id="script-card">
+      <div class="spread">
+        <h3 id="script-title">내 원고</h3>
+        <div class="seg" id="seg-mode" role="group" aria-label="원고 보기">
+          <button type="button" data-mode="show" class="on">원고 보임</button>
+          <button type="button" data-mode="hide">원고 숨김</button>
         </div>
-        <div class="row">
-          <button class="btn lg" id="btn-rec">말하기 시작</button>
-          <button class="btn quiet" id="btn-reset" hidden>지우기</button>
-        </div>
-        <div class="ready" id="ready-stage"></div>
-        <p class="muted">스페이스바로도 시작·종료할 수 있어요.</p>
-        <p class="muted" id="sr-note" hidden></p>
       </div>
+      <div class="script-box" id="script-box"></div>
+      <div class="hintbox" id="hintbox" hidden></div>
+      <div class="row" id="hint-row" hidden>
+        <button class="btn quiet sm" id="btn-hint">힌트 보기</button>
+        <span class="muted" id="hint-count"></span>
+      </div>
+      <div class="legend" id="script-legend" hidden>
+        <span class="s"><span class="ex hit">단어</span> 또렷하게 인식됨</span>
+        <span class="s"><span class="ex miss">단어</span> 인식되지 않음 — 다시 또박또박 말해 보세요</span>
+      </div>
+    </div>
 
-      <div class="stack">
-        <div class="card stack tight" id="script-card">
-          <div class="spread">
-            <h3 id="script-title">내 원고</h3>
-            <div class="row">
-              <div class="seg" id="seg-mode" role="group" aria-label="원고 보기">
-                <button type="button" data-mode="show" class="on">원고 보임</button>
-                <button type="button" data-mode="hide">원고 숨김</button>
-              </div>
-            </div>
-          </div>
-          <div class="row" id="hint-row" hidden>
-            <span class="muted" id="hint-count"></span>
-            <button class="btn quiet sm" id="btn-hint">힌트 보기</button>
-          </div>
-          <div class="script-box" id="script-box"></div>
-          <div class="hintbox" id="hintbox" hidden></div>
-        </div>
+    <!-- ② 말하기 -->
+    <div class="card stack">
+      <div class="miclamp">
+        <div class="clock" id="clock">0:00</div>
+        <div class="goal" id="goal-txt"></div>
+        <div class="count" id="countdown" hidden>3</div>
+      </div>
+      <div class="row">
+        <button class="btn lg" id="btn-rec">말하기 시작</button>
+        <button class="btn quiet" id="btn-reset" hidden>지우기</button>
+      </div>
+      <div class="ready" id="ready-stage"></div>
+      <p class="muted">스페이스바로도 시작·종료할 수 있어요.</p>
+      <p class="muted" id="sr-note" hidden></p>
+    </div>
 
-        <div class="card stack tight">
-          <h3>지금 말한 내용</h3>
-          <div class="live" id="live">말하기 시작을 누르면 여기에 인식된 문장이 나타납니다.</div>
-        </div>
+    <!-- ③ 인식 결과 -->
+    <div class="card stack tight">
+      <h3>지금 말한 내용</h3>
+      <div class="live" id="live">말하기 시작을 누르면 여기에 인식된 문장이 나타납니다.</div>
+    </div>
 
-        <div class="card stack tight" id="after-card" hidden>
-          <p class="lead" id="after-msg">말하기를 마쳤습니다. 리포트에서 결과를 확인한 뒤 다시 연습할 수 있어요.</p>
-          <div class="row">
-            <button class="btn lg" id="btn-to-3">리포트 보기 →</button>
-          </div>
-        </div>
+    <div class="card stack tight" id="after-card" hidden>
+      <p class="lead" id="after-msg">말하기를 마쳤습니다. 리포트에서 결과를 확인한 뒤 다시 연습할 수 있어요.</p>
+      <div class="row">
+        <button class="btn lg" id="btn-to-3">리포트 보기 →</button>
       </div>
     </div>
   </section>
@@ -496,7 +482,6 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
         <h2 id="report-title">리포트</h2>
         <span class="muted" id="report-sub"></span>
       </div>
-      <div id="mission-wrap" hidden></div>
       <div class="onething" id="onething"></div>
       <div class="scores" id="scores"></div>
       <div id="pause-wrap" hidden class="stack tight">
@@ -511,7 +496,8 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
         <div class="pane"><div class="k">준비한 원고</div><div class="t" id="pane-script"></div></div>
         <div class="pane"><div class="k">실제 발화</div><div class="t" id="pane-said"></div></div>
       </div>
-      <p class="muted">원고와 조금 달라도 괜찮습니다. 자연스럽게 나온 말이 진짜 실력이에요. 빨간 줄은 인식되지 않은 단어입니다.</p>
+      <p class="muted"><span class="ex miss" style="font-family:var(--font-en)">빨간 밑줄</span>은 또렷하게 들리지 않아 인식되지 않은 단어입니다.
+      원고와 조금 달라도 괜찮습니다. 자연스럽게 나온 말이 진짜 실력이에요.</p>
     </div>
 
     <div class="card stack" id="word-card" hidden>
@@ -524,13 +510,6 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
       <div class="spread"><h3>연습 기록</h3><span class="muted" id="hist-note"></span></div>
       <div class="tablewrap"><table class="tb" id="attempts"></table></div>
       <div id="round-compare" hidden></div>
-    </div>
-
-    <div class="card stack">
-      <div class="row">
-        <button class="btn ghost" id="btn-ai-speech">AI 말하기 피드백</button>
-      </div>
-      <div id="fb-speech" hidden></div>
     </div>
 
     <div class="card stack tight">
@@ -563,10 +542,12 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
   <!-- ===== 5. 제출 ===== -->
   <section id="s5" class="stack" hidden>
     <div class="card stack">
-      <h2>제출 전 확인</h2>
+      <h2>마무리</h2>
+      <div class="notice info">연습하는 동안 내용은 <b>이미 선생님께 자동으로 전달되고 있습니다.</b>
+      아래 버튼은 "다 했어요" 하고 알리는 용도예요.</div>
       <div id="review" class="stack"></div>
       <div class="row">
-        <button class="btn lg" id="btn-submit">선생님께 제출하기</button>
+        <button class="btn lg" id="btn-submit">다 했어요</button>
       </div>
       <div id="submit-msg" hidden></div>
     </div>
@@ -576,7 +557,7 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
   <section id="s6" hidden data-nonav>
     <div class="card done stack">
       <div class="mark">✓</div>
-      <h2>제출되었습니다</h2>
+      <h2>다 했습니다</h2>
       <p class="lead" id="done-sub"></p>
       <div class="row" style="justify-content:center"><button class="btn quiet" id="btn-next-round">한 번 더 연습하기</button></div>
     </div>
@@ -609,7 +590,7 @@ const CONFIG = {
   SENTENCES: 3,
   WORD_MIN: 8, WORD_MAX: 20,    // 한 문장 권장 단어 수
   PAUSE_MS: 1500,               // 이 이상 조용하면 '멈춤' 1회
-  HINT_MAX: 5, HINT_WORDS: 3, HINT_MS: 3500,
+  HINT_MAX: 5, HINT_MS: 5000,   // 힌트를 누르면 원고 전체가 이 시간만큼 보입니다
   SPEECH_LANG: 'en-US'
 };
 
@@ -648,17 +629,18 @@ const S = {
   student:null,
   mode:'show',       // 'show' = 원고 보임, 'hide' = 원고 숨김
   sentences: Array(CONFIG.SENTENCES).fill(''),
-  attempts: [],      // {n, mode, seconds, accuracy, wpm, pauses, pauseList, longest, hints, transcript, per, feedback}
+  attempts: [],      // {n, mode, seconds, accuracy, wpm, pauses, pauseList, longest, hints, transcript, per}
   last:null,
   viewing:-1,        // 리포트에서 보고 있는 연습 (S.attempts 의 번호)
-  mission:'',        // AI 가 준 다음 미션 — 다음 연습까지 이어집니다
   checks:{}, reflect:{r1:'',r2:'',r3:''},
   submitted:false,
   undoStack:[]
 };
 const ONLINE = !!CONFIG.API_URL;
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec=null, recording=false, finalText='', lastHeard=0, pauses=0, pauseList=[];
+let rec=null, recording=false, finalText='', interimText='', lastHeard=0, pauses=0, pauseList=[];
+/** 확정된 말 + 아직 확정 안 된 말. 끝낼 때 둘 다 써야 내용이 사라지지 않습니다. */
+function heardText(){ return (finalText + ' ' + interimText).replace(/\s+/g,' ').trim(); }
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
@@ -696,7 +678,7 @@ function save(){
     const k = storeKey(); if(!k) return;
     localStorage.setItem(k, JSON.stringify({
       name:S.student.name, sentences:S.sentences, attempts:S.attempts,
-      checks:S.checks, reflect:S.reflect, submitted:S.submitted, mission:S.mission
+      checks:S.checks, reflect:S.reflect, submitted:S.submitted
     }));
   }catch(e){}
 }
@@ -933,7 +915,7 @@ $('#btn-enter').addEventListener('click', ()=>{
     S.attempts  = prev.attempts  || [];
     S.checks    = prev.checks    || {};
     S.reflect   = prev.reflect   || S.reflect;
-    S.mission   = prev.mission   || '';
+
     S.last      = S.attempts.length ? S.attempts[S.attempts.length-1] : null;
     S.viewing   = S.attempts.length - 1;
   }
@@ -956,13 +938,12 @@ function renderSentences(){
   for(let i=0;i<CONFIG.SENTENCES;i++){
     const d = document.createElement('div'); d.className='sent';
     d.innerHTML = `<div class="sent-head"><span class="n">SENTENCE ${i+1}</span><span class="meta" id="meta-${i}"></span></div>
-      <textarea id="sent-${i}" rows="2" spellcheck="true"
-        placeholder="${i===0?'My topic is …':(i===1?'The main reason is …':'So I think …')}"></textarea>`;
+      <textarea id="sent-${i}" rows="2" spellcheck="true"></textarea>`;
     box.appendChild(d);
     const ta = d.querySelector('textarea');
     ta.value = S.sentences[i] || '';
     ta.addEventListener('input', ()=>{
-      S.sentences[i]=ta.value; updateMeta(i); save(); refreshGates(); renderReady();
+      S.sentences[i]=ta.value; updateMeta(i); save(); refreshGates(); renderReady(); queueSave();
       clearTimeout(previewTimer); previewTimer = setTimeout(renderPreview, 200);
     });
     updateMeta(i);
@@ -1081,8 +1062,31 @@ function stressSet(s){
 }
 function chunkText(c){ return c.words.join(' ').replace(/[,;:]$/,''); }
 
+/* 누르면 들을 단위 — 덩어리 / 단어 */
+let playUnit = 'chunk';
+$$('#seg-unit button').forEach(b=> b.addEventListener('click', ()=>{
+  playUnit = b.dataset.unit;
+  $$('#seg-unit button').forEach(x=> x.classList.toggle('on', x===b));
+  $('#preview').classList.toggle('by-word', playUnit==='word');
+  $('#preview').classList.toggle('by-chunk', playUnit==='chunk');
+  $('#unit-help').textContent = playUnit==='word'
+    ? '단어를 누르면 그 단어만 들을 수 있어요.'
+    : '덩어리를 누르면 그 부분만 들을 수 있어요.';
+  stopSpeak();
+}));
+
+/* 한 문장을 쉼표로 이어 붙입니다. 음성 엔진이 쉼표에서 자연스럽게 쉬어 줍니다. */
+function commaText(s){
+  const chunks = chunkSentence(s);
+  if(!chunks.length) return '';
+  let t = chunks.map(chunkText).join(', ');
+  if(!/[.!?]$/.test(t)) t += '.';
+  return t;
+}
+
 function renderPreview(){
   const box = $('#preview');
+  box.classList.add(playUnit==='word' ? 'by-word' : 'by-chunk');
   if(!S.sentences.some(s=>words(s)>=2)){
     box.innerHTML = '<span class="muted" style="font-family:var(--font-ui);font-size:13.5px">문장을 쓰면 끊어 읽을 자리가 여기에 표시됩니다.</span>';
     return;
@@ -1092,37 +1096,46 @@ function renderPreview(){
     if(!chunks.length) return '';
     const stress = stressSet(s);
     const inner = chunks.map((c,ci)=>{
-      const w = c.words.map(t=> stress.has(norm(t)) ? `<span class="stress">${esc(t)}</span>` : esc(t)).join(' ');
+      const w = c.words.map(t=>{
+        const inner2 = stress.has(norm(t)) ? `<span class="stress">${esc(t)}</span>` : esc(t);
+        return `<span class="wd" tabindex="0" role="button" data-w="${esc(t.replace(/[^A-Za-z']/g,''))}">${inner2}</span>`;
+      }).join(' ');
       return `<span class="chunk" tabindex="0" role="button" data-s="${si}" data-c="${ci}">${w}</span><span class="pause">${c.pause}</span>`;
     }).join(' ');
-    return `<div class="prow">
+    return `<div class="prow" data-row="${si}">
       <button class="btn quiet sm" data-say-sent="${si}" title="이 문장 듣기">▶ ${si+1}</button>
       <div class="ptext">${inner}</div></div>`;
   }).join('');
 
-  box.querySelectorAll('.chunk').forEach(el=>{
-    const fire = ()=>{
-      const c = chunkSentence(S.sentences[+el.dataset.s])[+el.dataset.c];
-      if(c) speakSeq([{ text:chunkText(c), el, gap:0 }]);
-    };
-    el.addEventListener('click', fire);
-    el.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fire(); } });
-  });
+  // 한 곳에서 클릭을 받아 단위에 맞게 재생합니다
+  box.onclick = e=>{
+    if(e.target.closest('[data-say-sent]')) return;
+    if(playUnit==='word'){
+      const w = e.target.closest('.wd');
+      if(w && w.dataset.w) speakSeq([{ text:w.dataset.w, el:w, gap:0 }]);
+      return;
+    }
+    const ch = e.target.closest('.chunk');
+    if(!ch) return;
+    const c = chunkSentence(S.sentences[+ch.dataset.s])[+ch.dataset.c];
+    if(c) speakSeq([{ text:chunkText(c), el:ch, gap:0 }]);
+  };
+  box.onkeydown = e=>{
+    if(e.key!=='Enter' && e.key!==' ') return;
+    const t = e.target.closest(playUnit==='word' ? '.wd' : '.chunk');
+    if(t){ e.preventDefault(); t.click(); }
+  };
   box.querySelectorAll('[data-say-sent]').forEach(b=> b.addEventListener('click',()=>{
     speakSeq(seqFor([+b.dataset.saySent]));
   }));
 }
-/* 문장 번호 목록 → 덩어리 단위 재생 목록 */
+/* 문장 번호 목록 → 재생 목록. 문장을 통째로 읽어 억양이 자연스럽습니다. */
 function seqFor(indices){
-  const items = [];
-  indices.forEach(si=>{
-    const chunks = chunkSentence(S.sentences[si]);
-    chunks.forEach((c,ci)=>{
-      const el = $(`#preview .chunk[data-s="${si}"][data-c="${ci}"]`);
-      items.push({ text:chunkText(c), el, gap: c.pause==='//' ? 520 : 260 });
-    });
-  });
-  return items;
+  return indices.map(si=>({
+    text: commaText(S.sentences[si]),
+    el: $(`#preview .prow[data-row="${si}"]`),
+    gap: 380
+  })).filter(x=>x.text);
 }
 
 /* --- 소리 내어 듣기 (브라우저 음성 합성) --- */
@@ -1141,10 +1154,11 @@ if('speechSynthesis' in window){
 }else{
   const n = $('#tts-note'); if(n){ n.hidden=false; n.textContent='이 브라우저는 소리 재생을 지원하지 않습니다. 크롬에서 열어 주세요.'; }
 }
+function clearMarks(){ $$('#preview .on').forEach(e=>e.classList.remove('on')); }
 function stopSpeak(){
   try{ speechSynthesis.cancel(); }catch(e){}
   clearTimeout(speakTimer);
-  $$('.chunk.on').forEach(e=>e.classList.remove('on'));
+  clearMarks();
   const b = $('#btn-say-stop'); if(b) b.hidden = true;
 }
 function speakSeq(items){
@@ -1156,7 +1170,7 @@ function speakSeq(items){
   const next = ()=>{
     if(i >= items.length){ $('#btn-say-stop').hidden = true; return; }
     const it = items[i++];
-    $$('.chunk.on').forEach(e=>e.classList.remove('on'));
+    clearMarks();
     if(it.el) it.el.classList.add('on');
     const u = new SpeechSynthesisUtterance(it.text);
     u.lang = CONFIG.SPEECH_LANG;
@@ -1246,6 +1260,7 @@ function setupStage(){
 function renderStageScript(marks){
   const box = $('#script-box');
   box.className = 'script-box' + (S.mode==='hide' && !marks ? ' blind' : '');
+  $('#script-legend').hidden = !marks;
   box.innerHTML = '';
   let k = 0;
   S.sentences.forEach(s=>{
@@ -1268,22 +1283,19 @@ function renderStageScript(marks){
   if(S.mode==='hide' && !marks) box.innerHTML = '<span class="muted" style="font-family:var(--font-ui);font-size:14px">원고를 숨겼습니다. 막히면 힌트를 누르세요 — 다음 세 단어만 잠깐 보여 줍니다.</span>';
 }
 
-/* 힌트 */
+/* 힌트 — 원고 전체를 잠깐 보여 줍니다 */
 let hintsUsed = 0, hintTimer = null;
 function updateHintBtn(){
-  $('#hint-count').textContent = `힌트 ${hintsUsed}/${CONFIG.HINT_MAX}`;
+  $('#hint-count').textContent = `${hintsUsed}/${CONFIG.HINT_MAX}회 사용`;
   $('#btn-hint').disabled = hintsUsed >= CONFIG.HINT_MAX;
 }
 $('#btn-hint').addEventListener('click', ()=>{
   if(hintsUsed >= CONFIG.HINT_MAX) return;
-  const T = buildTargets().filter(t=>t.n);
-  const said = finalText.toLowerCase().split(/\s+/).map(norm).filter(Boolean);
-  const matched = lcsMatch(T.map(t=>t.n), said);
-  let at = matched.lastIndexOf(true) + 1;
-  if(at >= T.length) at = 0;
-  const next = T.slice(at, at+CONFIG.HINT_WORDS).map(t=>t.raw).join(' ');
   hintsUsed++; updateHintBtn();
-  const hb = $('#hintbox'); hb.hidden=false; hb.textContent = next || '(원고 끝)';
+  const hb = $('#hintbox');
+  hb.hidden = false;
+  hb.innerHTML = S.sentences.map((s,i)=>`<div style="text-align:left">${i+1}. ${esc(s)}</div>`).join('')
+    + `<div class="muted" style="font-family:var(--font-ui);font-size:12px;margin-top:8px">${CONFIG.HINT_MS/1000}초 뒤에 사라집니다</div>`;
   clearTimeout(hintTimer);
   hintTimer = setTimeout(()=>{ hb.hidden = true; }, CONFIG.HINT_MS);
 });
@@ -1317,7 +1329,7 @@ function startCountdown(){
 }
 function startRec(){
   dropAudioTrack();            // 음량 측정용 마이크를 놓아 주어야 음성 인식이 잡습니다
-  finalText=''; pauses=0; pauseList=[]; lastHeard=Date.now();
+  finalText=''; interimText=''; pauses=0; pauseList=[]; lastHeard=Date.now();
   $('#live').textContent='';
   $('#hintbox').hidden = true;
   renderStageScript();
@@ -1340,8 +1352,9 @@ function startRec(){
       const r=e.results[i];
       if(r.isFinal) finalText += r[0].transcript + ' '; else interim += r[0].transcript;
     }
+    interimText = interim;
     $('#live').innerHTML = esc(finalText) + `<span class="interim">${esc(interim)}</span>`;
-    liveMark(finalText + ' ' + interim);
+    liveMark(heardText());
   };
   rec.onerror = e=>{
     if(e.error==='not-allowed'){
@@ -1384,7 +1397,7 @@ function stopRec(){
   $$('#seg-mode button').forEach(b=> b.disabled = false);
 
   const seconds = Math.max(1, Math.round((Date.now()-t0)/1000));
-  const transcript = finalText.trim();
+  const transcript = heardText();   // 확정되지 않은 끝부분까지 포함합니다
   const r = compare(transcript);
   const att = {
     n:S.attempts.length+1, mode:S.mode, seconds,
@@ -1393,10 +1406,11 @@ function stopRec(){
     pauses, pauseList: pauseList.slice(),
     longest: pauseList.reduce((m,p)=>Math.max(m,p.dur), 0),
     hints:(S.mode==='hide'?hintsUsed:0),
-    transcript, missed:r.missed, feedback:''
+    transcript, missed:r.missed
   };
   S.attempts.push(att); S.last = att; S.viewing = S.attempts.length-1;
   save(); refreshGates();
+  doSave(att);                      // 연습이 끝나면 바로 시트에 남깁니다
   renderStageScript(r.marks);
   $('#live').innerHTML = transcript ? esc(transcript)
     : '인식된 말이 없어요. 마이크가 켜져 있는지 확인하고 다시 해 보세요.';
@@ -1463,14 +1477,6 @@ function renderReport(){
   $('#report-title').textContent = `${a.n}번째 연습 리포트`;
   $('#report-sub').textContent =
     `${MODE_LABEL[a.mode]} · ${a.seconds}초` + (isLatest ? '' : ' · 지난 기록');
-
-  // 지난 미션 달성 여부
-  const mw = $('#mission-wrap');
-  if(S.mission && isLatest){
-    mw.hidden = false;
-    mw.innerHTML = `<div class="mission"><span class="ic">🎯</span><div class="body">
-      <div class="k">지난 미션</div><div class="v">${esc(S.mission)}</div></div></div>`;
-  } else mw.hidden = true;
 
   const f = firstFix(a);
   $('#onething').innerHTML = `<div class="k">가장 먼저 고칠 한 가지</div><div class="v">${esc(f.v)}</div><div class="d">${esc(f.d)}</div>`;
@@ -1553,12 +1559,6 @@ function renderReport(){
         : '원고를 숨겨도 전달이 유지됐어요. 잘 외웠습니다.'}</p>`;
   } else rc.hidden = true;
 
-  // 이 회차에 받아 둔 AI 피드백이 있으면 다시 보여 줍니다
-  const fb = $('#fb-speech');
-  if(a.feedback){
-    fb.hidden=false; fb.className='notice info'; fb.style.whiteSpace='pre-wrap'; fb.textContent=a.feedback;
-  } else fb.hidden = true;
-  $('#btn-ai-speech').textContent = a.feedback ? 'AI 피드백 다시 받기' : 'AI 말하기 피드백';
 }
 function bestOf(mode){
   const list = S.attempts.filter(a=>(a.mode||'show')===mode);
@@ -1607,10 +1607,10 @@ function renderChecks(){
     box.appendChild(l);
     const inp = l.querySelector('input');
     inp.checked = !!S.checks[c.id];
-    inp.addEventListener('change', ()=>{ S.checks[c.id]=inp.checked; save(); });
+    inp.addEventListener('change', ()=>{ S.checks[c.id]=inp.checked; save(); queueSave(800); });
   });
 }
-['r1','r2','r3'].forEach(k=> $('#'+k).addEventListener('input', e=>{ S.reflect[k]=e.target.value; save(); }));
+['r1','r2','r3'].forEach(k=> $('#'+k).addEventListener('input', e=>{ S.reflect[k]=e.target.value; save(); queueSave(); }));
 
 /* =========================================================
    11) 5단계 — 제출
@@ -1634,13 +1634,15 @@ function renderReview(){
     <p class="muted">${bh ? '원고를 숨기고 연습한 기록도 함께 전달됩니다.' : '아직 원고를 숨기고 해 본 기록이 없습니다. 괜찮지만, 한 번 해 보면 더 좋습니다.'}
     음성은 보내지 않습니다. 위 문장과 연습 기록, 점검·성찰 내용만 선생님 시트로 전달됩니다.</p>`;
   $('#btn-submit').disabled = !ONLINE;
-  if(!ONLINE) alertBox('#submit-msg','연습 모드에서는 제출할 수 없어요. 화면을 선생님께 보여 주세요.','warn');
+  if(!ONLINE) alertBox('#submit-msg','연습 모드에서는 선생님께 전달되지 않아요. 화면을 선생님께 보여 주세요.','warn');
 }
-$('#btn-submit').addEventListener('click', async ()=>{
-  const btn=$('#btn-submit'); btn.disabled=true; btn.textContent='보내는 중…';
+/** 지금까지의 내용을 서버가 받을 모양으로 만듭니다. */
+function buildPayload(action, oneAttempt){
   const bs=bestOf('show'), bh=bestOf('hide');
-  const payload = {
-    action:'submit', activity:CONFIG.ACTIVITY,
+  const slim = a=>({n:a.n, mode:MODE_LABEL[a.mode]||'원고 보임', seconds:a.seconds,
+                    accuracy:a.accuracy, wpm:a.wpm, pauses:a.pauses, hints:a.hints});
+  return {
+    action, activity:CONFIG.ACTIVITY,
     grade:S.student.grade, num:S.student.num, name:S.student.name,
     sentences:S.sentences,
     attemptCount:S.attempts.length,
@@ -1648,16 +1650,65 @@ $('#btn-submit').addEventListener('click', async ()=>{
     lastMode: S.last ? MODE_LABEL[S.last.mode] : '',
     bestShow: bs?{accuracy:bs.accuracy,seconds:bs.seconds,wpm:bs.wpm,pauses:bs.pauses}:null,
     bestHide: bh?{accuracy:bh.accuracy,seconds:bh.seconds,wpm:bh.wpm,pauses:bh.pauses,hints:bh.hints}:null,
-    attempts:S.attempts.map(a=>({n:a.n,mode:MODE_LABEL[a.mode]||'원고 보임',seconds:a.seconds,accuracy:a.accuracy,wpm:a.wpm,pauses:a.pauses,hints:a.hints})),
+    // 방금 끝난 연습 하나만 보내면 서버가 그것만 기록합니다
+    attempt: oneAttempt ? slim(oneAttempt) : null,
+    attempts: oneAttempt ? null : S.attempts.map(slim),
     lastTranscript:S.last?S.last.transcript:'',
-    mission:S.mission||'',
     checks:CHECKS.map(c=>({id:c.id,label:c.t,ok:!!S.checks[c.id]})),
     reflect:S.reflect
   };
+}
+
+/* =========================================================
+   자동 저장 — 제출 버튼을 누르지 않아도 시트에 남습니다
+   ========================================================= */
+let saveTimer=null, saving=false, again=false, savedOnce=false;
+
+function showSaveState(state){
+  const el = $('#save-state');
+  if(!el) return;
+  el.hidden = false;
+  if(state==='saving'){ el.className='savetag work'; el.textContent='저장 중…'; }
+  else if(state==='ok'){
+    const t = new Date();
+    el.className='savetag ok';
+    el.textContent = `저장됨 ${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}`;
+  }
+  else if(state==='fail'){ el.className='savetag bad'; el.textContent='저장 안 됨 — 잠시 뒤 다시 시도합니다'; }
+  else el.hidden = true;
+}
+
+/** 조금 기다렸다 저장합니다. 타이핑 중에 매번 보내지 않도록 모았다가 보냅니다. */
+function queueSave(delay){
+  if(!ONLINE || !S.student) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{ saveTimer=null; doSave(); }, delay===undefined ? 2500 : delay);
+}
+/** 지금 바로 저장합니다. 연습이 끝난 직후처럼 미룰 이유가 없을 때 씁니다. */
+async function doSave(oneAttempt){
+  if(!ONLINE || !S.student || !hasScript()) return;
+  if(saving){ again = true; return; }       // 저장 중이면 끝난 뒤 한 번 더
+  saving = true; showSaveState('saving');
   try{
-    const r = await post(payload);
+    const r = await post(buildPayload('save', oneAttempt));
     if(!r || r.ok!==true) throw new Error(r&&r.error?r.error:'서버가 응답하지 않았어요');
-    S.submitted=true; save();
+    savedOnce = true; showSaveState('ok');
+  }catch(e){
+    showSaveState('fail');
+    setTimeout(()=>queueSave(8000), 8000);  // 잠시 뒤 스스로 다시 시도
+  }finally{
+    saving = false;
+    if(again){ again = false; queueSave(600); }
+  }
+}
+
+$('#btn-submit').addEventListener('click', async ()=>{
+  const btn=$('#btn-submit'); btn.disabled=true; btn.textContent='보내는 중…';
+  clearTimeout(saveTimer); saveTimer = null;
+  try{
+    const r = await post(buildPayload('submit'));
+    if(!r || r.ok!==true) throw new Error(r&&r.error?r.error:'서버가 응답하지 않았어요');
+    S.submitted=true; save(); showSaveState('ok');
     $('#done-sub').textContent = `${S.student.grade}학년 ${S.student.num}번 ${S.student.name} · 연습 ${S.attempts.length}회`;
     go(6);
   }catch(e){
@@ -1668,53 +1719,7 @@ $('#btn-submit').addEventListener('click', async ()=>{
 $('#btn-next-round').addEventListener('click', ()=>{ S.submitted=false; go(2); });
 
 /* =========================================================
-   12) AI 피드백
-   ========================================================= */
-$('#btn-ai-speech').addEventListener('click', async ()=>{
-  const box = $('#fb-speech'), btn = $('#btn-ai-speech');
-  if(!ONLINE){ alertBox('#fb-speech','연습 모드에서는 AI 피드백을 쓸 수 없어요.','warn'); return; }
-  const a = viewed();
-  if(!a || !a.transcript){ alertBox('#fb-speech','먼저 한 번 말하기 연습을 해 주세요.','warn'); return; }
-
-  // 바로 앞 연습 — AI 가 변화를 짚을 수 있도록 함께 보냅니다
-  const i = S.attempts.indexOf(a);
-  const prev = i > 0 ? S.attempts[i-1] : null;
-
-  box.hidden=false; box.className='notice info'; box.textContent='AI가 읽고 있어요…';
-  btn.disabled=true;
-  try{
-    const r = await post({
-      action:'feedback', kind:'speech',
-      grade:S.student.grade, num:S.student.num, name:S.student.name,
-      sentences:S.sentences, mode:MODE_LABEL[a.mode], transcript:a.transcript,
-      accuracy:a.accuracy, per:a.per, seconds:a.seconds, wpm:a.wpm,
-      pauses:a.pauses, pauseList:a.pauseList||[], longest:a.longest||0,
-      hints:a.hints, missed:(a.missed||[]).slice(0,10),
-      attemptNo:a.n,
-      prev: prev ? { n:prev.n, mode:MODE_LABEL[prev.mode], accuracy:prev.accuracy,
-                     wpm:prev.wpm, pauses:prev.pauses, hints:prev.hints } : null,
-      lastMission: S.mission || '',
-      hardPart: (S.reflect && S.reflect.r2) || ''
-    });
-    if(!r || r.ok!==true) throw new Error(r&&r.error?r.error:'응답을 받지 못했어요');
-    a.feedback = r.text;
-    if(r.mission) S.mission = r.mission;
-    save();
-    box.className='notice info'; box.style.whiteSpace='pre-wrap'; box.textContent=r.text;
-    btn.textContent = 'AI 피드백 다시 받기';
-    if(S.mission){
-      const mw = $('#mission-wrap');
-      mw.hidden=false;
-      mw.innerHTML = `<div class="mission"><span class="ic">🎯</span><div class="body">
-        <div class="k">다음 미션</div><div class="v">${esc(S.mission)}</div></div></div>`;
-    }
-  }catch(e){
-    box.className='notice err'; box.textContent='AI 피드백을 받지 못했어요: '+e.message;
-  }finally{ btn.disabled=false; }
-});
-
-/* =========================================================
-   13) 공통
+   12) 공통
    ========================================================= */
 async function post(payload){
   // text/plain 으로 보내야 Apps Script 가 preflight(CORS) 없이 받습니다.
@@ -1728,8 +1733,11 @@ async function post(payload){
 function alertBox(sel,msg,kind){
   const el=$(sel); el.hidden=false; el.className='notice '+(kind||'info'); el.textContent=msg;
 }
+// 저장이 아직 안 끝났을 때만 붙잡습니다
 window.addEventListener('beforeunload', e=>{
-  if(hasScript() && !S.submitted && ONLINE){ e.preventDefault(); e.returnValue=''; }
+  if(ONLINE && hasScript() && (saving || saveTimer || !savedOnce)){
+    e.preventDefault(); e.returnValue='';
+  }
 });
 </script>
 </body>
