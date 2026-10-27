@@ -270,6 +270,44 @@ p.lead{margin:0;color:var(--ink-soft)}
 .pauses{display:flex;gap:6px;flex-wrap:wrap}
 .ptag{font-size:12px;font-variant-numeric:tabular-nums;border:1px solid var(--amber-line);background:var(--amber-soft);color:var(--amber);border-radius:6px;padding:3px 9px}
 
+/* 원고 vs 실제 발화 — 왼쪽은 '준비한 것', 오른쪽은 '말한 것' */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:680px){.compare{grid-template-columns:1fr}}
+.pane{border-radius:9px;padding:0;min-width:0;overflow:hidden;border:1px solid var(--line)}
+.pane .k{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;letter-spacing:.03em;padding:9px 13px;border-bottom:1px solid var(--line)}
+.pane .k .ic{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;font-size:11px;flex:none;color:#fff}
+.pane .t{font-family:var(--font-en);font-size:16px;line-height:1.85;padding:13px;overflow-wrap:break-word}
+.pane .t .sl{display:block;margin-bottom:6px}
+.pane .t .sl:last-child{margin-bottom:0}
+.pane .t .no{font-family:var(--font-ui);font-weight:700;color:var(--ink-faint);font-size:13px;margin-right:5px}
+.pane .t .pct{font-family:var(--font-ui);font-size:12px;color:var(--ink-faint);margin-left:5px;font-variant-numeric:tabular-nums}
+
+.pane.src{border-color:var(--teal-line)}
+.pane.src .k{background:var(--teal-soft);color:var(--teal);border-bottom-color:var(--teal-line)}
+.pane.src .k .ic{background:var(--teal)}
+.pane.said{border-color:var(--line)}
+.pane.said .k{background:var(--sunk);color:var(--ink-soft)}
+.pane.said .k .ic{background:var(--ink-faint)}
+.pane .t .miss{color:var(--red);text-decoration:underline;text-decoration-color:var(--red);text-decoration-thickness:2px;text-underline-offset:3px}
+
+/* 표 */
+table.tb{width:100%;border-collapse:collapse;font-size:13.5px}
+table.tb th,table.tb td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
+table.tb th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
+table.tb td{font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+.delta.up{color:var(--teal);font-weight:700} .delta.down{color:var(--red);font-weight:700}
+.mode-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--line);color:var(--ink-soft);white-space:nowrap}
+.mode-tag.hide{background:var(--teal-soft);color:var(--teal)}
+
+/* 다시 말해볼 단어 */
+.words{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:10px}
+.wcard{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--card);min-width:0}
+.wcard .w{font-family:var(--font-en);font-size:20px;font-weight:600;overflow-wrap:break-word}
+.wcard .c{font-size:12px;color:var(--ink-faint);margin-bottom:8px}
+.wcard.done{border-color:var(--teal-line);background:var(--teal-soft)}
+.wcard .st{font-size:12px;font-weight:700;color:var(--teal)}
+
 /* ---------- 점검 ---------- */
 .check{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--card);cursor:pointer}
 .check input{margin-top:4px;width:17px;height:17px;accent-color:var(--teal);flex:none}
@@ -400,9 +438,8 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
             <button type="button" data-unit="word">단어</button>
           </div>
           <select id="tts-rate" aria-label="말 속도">
-            <option value="0.7">느리게</option>
-            <option value="0.85" selected>보통</option>
-            <option value="1">실제 속도</option>
+            <option value="0.9" selected>보통</option>
+            <option value="0.55">느리게</option>
           </select>
           <button class="btn quiet sm" id="btn-say-all">전체 듣기</button>
           <button class="btn quiet sm" id="btn-say-stop" hidden>멈춤</button>
@@ -493,8 +530,14 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
     <div class="card stack">
       <h3>내 원고 vs 실제로 말한 것</h3>
       <div class="compare">
-        <div class="pane"><div class="k">준비한 원고</div><div class="t" id="pane-script"></div></div>
-        <div class="pane"><div class="k">실제 발화</div><div class="t" id="pane-said"></div></div>
+        <div class="pane src">
+          <div class="k"><span class="ic">✎</span>내가 준비한 원고</div>
+          <div class="t" id="pane-script"></div>
+        </div>
+        <div class="pane said">
+          <div class="k"><span class="ic">🎤</span>실제로 말한 것</div>
+          <div class="t" id="pane-said"></div>
+        </div>
       </div>
       <p class="muted"><span class="ex miss" style="font-family:var(--font-en)">빨간 밑줄</span>은 또렷하게 들리지 않아 인식되지 않은 단어입니다.
       원고와 조금 달라도 괜찮습니다. 자연스럽게 나온 말이 진짜 실력이에요.</p>
@@ -826,7 +869,8 @@ function paintReady(sel, keys, opts){
 /* 방금 한 연습의 리포트를 아직 안 봤으면 다음 연습을 막습니다 */
 let needReport = false;
 function renderReady(){
-  paintReady('#ready-panel', null, { count:'#ready-count' });
+  // 입장 화면에서는 아직 원고를 쓰기 전이므로 원고 항목을 넣지 않습니다
+  paintReady('#ready-panel', ['info','media','speech'], { count:'#ready-count' });
   paintReady('#ready-stage', ['script','media','speech']);
   const g = $('#btn-rec');
   if(g && !recording){
@@ -1165,7 +1209,7 @@ function speakSeq(items){
   if(!('speechSynthesis' in window) || !items.length) return;
   stopSpeak();
   $('#btn-say-stop').hidden = false;
-  const rate = parseFloat($('#tts-rate').value) || 0.85;
+  const rate = parseFloat($('#tts-rate').value) || 0.9;
   let i = 0;
   const next = ()=>{
     if(i >= items.length){ $('#btn-say-stop').hidden = true; return; }
@@ -1507,9 +1551,11 @@ function renderReport(){
       if(norm(raw)){ const m=marks[k++]; html += m&&!m.ok ? `<span class="miss">${esc(raw)}</span> ` : esc(raw)+' '; }
       else html += esc(raw)+' ';
     });
-    return `<div><b>${i+1}.</b> ${html}<span class="muted">(${a.per[i]}%)</span></div>`;
+    return `<span class="sl"><span class="no">${i+1}.</span>${html}<span class="pct">${a.per[i]}%</span></span>`;
   }).join('');
-  $('#pane-said').innerHTML = a.transcript ? esc(a.transcript) : '<span class="muted">인식된 말이 없습니다.</span>';
+  $('#pane-said').innerHTML = a.transcript
+    ? `<span class="sl">${esc(a.transcript)}</span>`
+    : '<span class="muted" style="font-family:var(--font-ui);font-size:13.5px">인식된 말이 없습니다.</span>';
 
   // 다시 말해볼 단어
   const uniq = [...new Set(a.missed.map(w=>w.replace(/[^A-Za-z']/g,'')).filter(w=>w.length>2))].slice(0,6);
