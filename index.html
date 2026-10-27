@@ -540,7 +540,7 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
         </div>
       </div>
       <p class="muted"><span class="ex miss" style="font-family:var(--font-en)">빨간 밑줄</span>은 또렷하게 들리지 않아 인식되지 않은 단어입니다.
-      원고와 조금 달라도 괜찮습니다. 자연스럽게 나온 말이 진짜 실력이에요.</p>
+      원고와 조금 달라도 괜찮습니다.</p>
     </div>
 
     <div class="card stack" id="word-card" hidden>
@@ -576,7 +576,7 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
     </div>
     <div class="card stack tight">
       <h3>나의 성찰</h3>
-      <div class="field"><label for="r1">지난번보다 바꾼 것</label><textarea class="reflect" id="r1" placeholder="한국어로 한두 문장"></textarea></div>
+      <div class="field"><label for="r1">지난번보다 발전된 부분</label><textarea class="reflect" id="r1" placeholder="한국어로 한두 문장"></textarea></div>
       <div class="field"><label for="r2">아직 어려운 것</label><textarea class="reflect" id="r2" placeholder="예) 두 번째 문장에서 자꾸 막힌다"></textarea></div>
       <div class="field"><label for="r3">다음에 할 것</label><textarea class="reflect" id="r3" placeholder="예) 두 번째 문장만 세 번 더 연습하겠다"></textarea></div>
     </div>
@@ -1336,7 +1336,7 @@ function renderStageScript(marks){
     });
     box.appendChild(line);
   });
-  if(S.mode==='hide' && !marks) box.innerHTML = '<span class="muted" style="font-family:var(--font-ui);font-size:14px">원고를 숨겼습니다. 막히면 힌트를 누르세요 — 다음 세 단어만 잠깐 보여 줍니다.</span>';
+  if(S.mode==='hide' && !marks) box.innerHTML = '<span class="muted" style="font-family:var(--font-ui);font-size:14px">원고를 숨겼습니다. 막히면 힌트를 누르세요 — 원고를 잠깐 보여 줍니다.</span>';
 }
 
 /* 힌트 — 원고 전체를 잠깐 보여 줍니다 */
