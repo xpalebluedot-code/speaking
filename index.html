@@ -628,7 +628,13 @@ const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbz4tfEY-yr8Yqw96ygvhQILIAfa5_y_e4KrVgmq_UyyNIfUUIKyKQwEv9k101m3M9A_aA/exec',
 
   ACTIVITY: '말하기 연습하기',
-  ROSTER: { 1: 16, 2: 15 },     // 학년별 마지막 번호
+
+  // 학년별 실제 번호 목록. 전학 등으로 비는 번호가 있으면 여기서 빼면 됩니다.
+  // Code.gs 의 ROSTER 와 똑같이 맞춰 주세요.
+  ROSTER: {
+    1: [2,3,4,6,7,8,9,10,11,12,13,14,15,16,18,19],
+    2: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]      // ← 2학년 실제 번호로 고쳐 주세요
+  },
   MAX_SECONDS: 120,             // 이 시간이 지나면 자동 종료 (목표 시간은 없습니다)
   SENTENCES: 3,
   WORD_MIN: 8, WORD_MAX: 20,    // 한 문장 권장 단어 수
@@ -805,9 +811,15 @@ document.addEventListener('keydown', e=>{
 /* =========================================================
    6) 입장
    ========================================================= */
+/** 설정이 숫자 하나든 번호 목록이든 모두 받아 줍니다. */
+function rosterOf(grade){
+  const r = CONFIG.ROSTER[grade];
+  if(Array.isArray(r)) return r;
+  return Array.from({length: r || 30}, (_,i)=>i+1);
+}
 function fillRoster(){
-  const g = $('#f-grade').value, max = CONFIG.ROSTER[g] || 30;
-  $('#f-num').innerHTML = Array.from({length:max},(_,i)=>`<option value="${i+1}">${i+1}번</option>`).join('');
+  const list = rosterOf($('#f-grade').value);
+  $('#f-num').innerHTML = list.map(n=>`<option value="${n}">${n}번</option>`).join('');
 }
 $('#f-grade').addEventListener('change', fillRoster); fillRoster();
 $('#wrange').textContent = `${CONFIG.WORD_MIN}~${CONFIG.WORD_MAX}`;

@@ -103,6 +103,9 @@ h3{font-size:12px;margin:0;letter-spacing:.07em;text-transform:uppercase;color:v
 .tile.work{border-color:var(--amber-line);background:var(--amber-soft)}
 .tile.done{border-color:var(--teal-line);background:var(--teal-soft)}
 .tile.on{outline:2px solid var(--teal);outline-offset:1px}
+.tile.off{border-color:var(--red-line)}
+.tile .warn{font-size:10px;font-weight:700;color:var(--red);background:var(--red-soft);
+  border:1px solid var(--red-line);border-radius:4px;padding:1px 5px;vertical-align:2px}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
 .dot.work{background:var(--amber)} .dot.done{background:var(--teal)} .dot.none{background:var(--ink-faint)}
 
@@ -302,13 +305,16 @@ $('#btn-now').addEventListener('click', ()=>load());
 /* ---------- 그리기 ---------- */
 function render(){
   if(!DATA) return;
-  const size = DATA.rosterSize || 30;
   const by = {};
   (DATA.students||[]).forEach(s=>{ by[Number(s.num)] = s; });
 
-  const nums = Array.from({length:size},(_,i)=>i+1);
+  // 명단에 없는 번호로 들어온 학생이 있으면 뒤에 덧붙입니다
+  const roster = (DATA.roster || []).map(Number);
+  const extra = Object.keys(by).map(Number).filter(n=>roster.indexOf(n)<0).sort((a,b)=>a-b);
+  const nums = roster.concat(extra);
+  const size = roster.length;
   const inList  = nums.filter(n=>by[n]);
-  const missing = nums.filter(n=>!by[n]);
+  const missing = roster.filter(n=>!by[n]);
   const done    = inList.filter(n=>by[n].status==='제출함');
   const totalTry = inList.reduce((a,n)=>a+(Number(by[n].attempts)||0),0);
   const hideTried = inList.filter(n=>(Number(by[n].hideCount)||0)>0);
@@ -329,10 +335,11 @@ function render(){
   $('#grid').innerHTML = nums.map(n=>{
     const s = by[n];
     if(!s) return `<div class="tile none"><div class="n">${n}</div><div class="meta">미참여</div></div>`;
-    const cls = s.status==='제출함' ? 'done' : 'work';
+    const off = roster.indexOf(n) < 0;   // 명단에 없는 번호
+    const cls = (s.status==='제출함' ? 'done' : 'work') + (off ? ' off' : '');
     const best = Math.max(Number(s.accHide)||0, Number(s.accShow)||0);
     return `<button class="tile ${cls} ${SEL===n?'on':''}" data-n="${n}">
-      <div class="n">${n}</div>
+      <div class="n">${n}${off?' <span class="warn">명단 밖</span>':''}</div>
       <div class="nm">${esc(s.name)}</div>
       <div class="meta">연습 ${Number(s.attempts)||0}회${(Number(s.hideCount)||0)?` · 숨김 ${s.hideCount}`:''}</div>
       <div class="bar"><i style="width:${Math.min(100,best)}%"></i></div>
