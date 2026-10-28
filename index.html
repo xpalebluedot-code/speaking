@@ -1720,7 +1720,7 @@ function buildPayload(action, oneAttempt){
 /* =========================================================
    자동 저장 — 제출 버튼을 누르지 않아도 시트에 남습니다
    ========================================================= */
-let saveTimer=null, saving=false, again=false, savedOnce=false;
+let saveTimer=null, saving=false, again=false, savedOnce=false, lastSent='';
 
 function showSaveState(state){
   const el = $('#save-state');
@@ -1746,14 +1746,19 @@ function queueSave(delay){
 async function doSave(oneAttempt){
   if(!ONLINE || !S.student || !hasScript()) return;
   if(saving){ again = true; return; }       // 저장 중이면 끝난 뒤 한 번 더
+  const payload = buildPayload('save', oneAttempt);
+  const body = JSON.stringify(payload);
+  if(!oneAttempt && body === lastSent) return;   // 바뀐 게 없으면 보내지 않습니다
+
   saving = true; showSaveState('saving');
   try{
-    const r = await post(buildPayload('save', oneAttempt));
+    const r = await post(payload);
     if(!r || r.ok!==true) throw new Error(r&&r.error?r.error:'서버가 응답하지 않았어요');
-    savedOnce = true; showSaveState('ok');
+    savedOnce = true; lastSent = body; showSaveState('ok');
   }catch(e){
     showSaveState('fail');
-    setTimeout(()=>queueSave(8000), 8000);  // 잠시 뒤 스스로 다시 시도
+    // 한 반이 한꺼번에 다시 시도하지 않도록 기다리는 시간을 조금씩 다르게 둡니다
+    queueSave(5000 + Math.floor(Math.random()*7000));
   }finally{
     saving = false;
     if(again){ again = false; queueSave(600); }
