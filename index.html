@@ -192,6 +192,9 @@ p.lead{margin:0;color:var(--ink-soft)}
 .issue .m em{font-style:normal;font-family:var(--font-en);text-decoration:underline wavy var(--red) 1.5px;padding:0 1px}
 .issue.good{border-left-color:var(--teal)}
 .issue.good .k{color:var(--teal)}
+.issue.hard{border-left-color:var(--red)}
+.issue.hard .k{color:var(--red)}
+.issue .m b{color:var(--teal);font-family:var(--font-en);font-size:15px}
 
 .preview{border:1px solid var(--teal-line);background:var(--teal-soft);border-radius:9px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
 .prow{display:flex;gap:10px;align-items:flex-start;min-width:0}
@@ -426,6 +429,9 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
           <button class="btn quiet sm" id="btn-undo" hidden>되돌리기</button>
         </div>
         <div class="issues" id="issues"></div>
+        <p class="muted">자주 틀리는 것만 찾아 줍니다. 모든 철자를 검사하지는 않아요.
+        입력칸에 <span style="text-decoration:underline wavy #b3261e 1.5px">빨간 물결선</span>이 보이면 크롬이 철자를 의심하는 것이니,
+        그 단어를 <b>오른쪽 클릭</b>해서 고칠 말을 확인해 보세요.</p>
       </div>
     </div>
 
@@ -683,6 +689,47 @@ const WEAK = {
   'thing':'무엇인지 이름을 붙여 보세요', 'things':'무엇인지 이름을 붙여 보세요',
   'get':'receive·become·arrive 중 뜻에 맞는 말로'
 };
+/* 자주 틀리는 철자 — 사전을 넣지 않고 '틀린 형태'만 모아 둡니다.
+   멀쩡한 단어를 틀렸다고 하는 일이 없도록, 확실한 것만 넣었습니다. */
+const MISSPELL = {
+  'becuase':'because','becasue':'because','becouse':'because','beacuse':'because',
+  'enviroment':'environment','enviornment':'environment','envrionment':'environment',
+  'recieve':'receive','recieved':'received','beleive':'believe','beleived':'believed',
+  'thier':'their','freind':'friend','freinds':'friends',
+  'alot':'a lot','seperate':'separate','definately':'definitely','defiantly':'definitely',
+  'occured':'occurred','begining':'beginning','goverment':'government',
+  'probelm':'problem','problme':'problem','porblem':'problem',
+  'studnets':'students','studetns':'students','studens':'students',
+  'shcool':'school','schoool':'school','scool':'school',
+  'succesful':'successful','sucessful':'successful','neccessary':'necessary','necesary':'necessary',
+  'tommorow':'tomorrow','tomorow':'tomorrow','untill':'until','wich':'which',
+  'teh':'the','adn':'and','waht':'what','taht':'that','htis':'this',
+  'happend':'happened','intresting':'interesting','interesing':'interesting',
+  'diffrent':'different','differnt':'different','improtant':'important','importent':'important',
+  'excercise':'exercise','exersise':'exercise','restarant':'restaurant','resturant':'restaurant',
+  'comunity':'community','communtiy':'community','oppurtunity':'opportunity','oportunity':'opportunity',
+  'expirience':'experience','experiance':'experience','sholud':'should','shoud':'should',
+  'woud':'would','wolud':'would','theese':'these','allways':'always','alway':'always',
+  'togther':'together','togehter':'together','somthing':'something','someting':'something',
+  'everytime':'every time','noone':'no one','infact':'in fact',
+  'anwser':'answer','arguement':'argument','calender':'calendar','cemetary':'cemetery',
+  'concious':'conscious','embarass':'embarrass','existance':'existence','knowlege':'knowledge',
+  'maintainance':'maintenance','occassion':'occasion','persue':'pursue','priviledge':'privilege',
+  'realy':'really','reccomend':'recommend','refered':'referred','relevent':'relevant',
+  'responsable':'responsible','rythm':'rhythm','sincerly':'sincerely','speach':'speech',
+  'succeded':'succeeded','suprise':'surprise','truely':'truly','usualy':'usually',
+  'wierd':'weird','writting':'writing','alright':'all right','everyones':"everyone's"
+};
+
+/* 셀 수 없는 명사에 s 를 붙이는 실수 */
+const UNCOUNT = {
+  'peoples':'people','informations':'information','advices':'advice','homeworks':'homework',
+  'furnitures':'furniture','equipments':'equipment','knowledges':'knowledge',
+  'researches':'research','evidences':'evidence','traffics':'traffic','moneys':'money',
+  'softwares':'software','feedbacks':'feedback','stuffs':'stuff','luggages':'luggage',
+  'trashes':'trash','garbages':'garbage','polutions':'pollution','pollutions':'pollution'
+};
+
 const CONTRACT = [
   ['is not',"isn't"],['are not',"aren't"],['was not',"wasn't"],['were not',"weren't"],
   ['do not',"don't"],['does not',"doesn't"],['did not',"didn't"],['cannot',"can't"],
@@ -1045,11 +1092,48 @@ function refreshGates(){
 }
 
 /* --- 다듬기 (기기 안에서 · AI 없음) --- */
+
+/** 바꿀 말의 첫 글자를 원래 단어의 대소문자에 맞춥니다. */
+function keepCase(found, rep){
+  return /^[A-Z]/.test(found) ? rep[0].toUpperCase() + rep.slice(1) : rep;
+}
+/** 한 문장에서 목록에 있는 틀린 낱말을 찾습니다. */
+function findWords(s, map, kind, tail, i){
+  const out = [];
+  Object.keys(map).forEach(bad=>{
+    const re = new RegExp('\\b' + bad + '\\b', 'i');
+    const m = s.match(re);
+    if(!m) return;
+    const rep = keepCase(m[0], map[bad]);
+    out.push({ i, k:kind, m:`<em>${esc(m[0])}</em> → <b>${esc(rep)}</b> ${tail}`, find:m[0], rep });
+  });
+  return out;
+}
+
 function findIssues(){
   const out = [];
   S.sentences.forEach((raw,i)=>{
     const s = (raw||'').trim(); if(!s) return;
     const n = words(s);
+
+    /* 철자 */
+    out.push(...findWords(s, MISSPELL, '철자', '', i));
+    out.push(...findWords(s, UNCOUNT, '문법', '— 셀 수 없는 명사라 s 를 붙이지 않아요.', i));
+
+    /* 기계적으로 확실한 것들 */
+    let m;
+    if((m = s.match(/\b(i)\b(?!['’])/)))
+      out.push({i,k:'대문자',m:`<em>i</em> → <b>I</b> — 영어에서 '나'는 언제나 대문자입니다.`, find:m[0], rep:'I'});
+    if((m = s.match(/\b([A-Za-z]+)\s+\1\b/i)))
+      out.push({i,k:'중복',m:`<em>${esc(m[0])}</em> — 같은 낱말이 두 번 이어져요.`, find:m[0], rep:m[1]});
+    if((m = s.match(/\ba\s+([aeiouAEIOU]\w*)/)))
+      out.push({i,k:'관사',m:`<em>a ${esc(m[1])}</em> → <b>an ${esc(m[1])}</b> — 모음 소리 앞에서는 an 을 씁니다.`, find:m[0], rep:'an '+m[1]});
+    if((m = s.match(/\s+([,.!?])/)))
+      out.push({i,k:'띄어쓰기',m:`문장 부호 앞에 띈 자리가 있어요.`, find:m[0], rep:m[1]});
+    if((m = s.match(/([,.!?])([A-Za-z])/)))
+      out.push({i,k:'띄어쓰기',m:`문장 부호 뒤에 띄어 주세요.`, find:m[0], rep:m[1]+' '+m[2]});
+    if((m = s.match(/ {2,}/)))
+      out.push({i,k:'띄어쓰기',m:`띈 자리가 두 칸 이상이에요.`, find:m[0], rep:' '});
     if(n > CONFIG.WORD_MAX) out.push({i,k:'길이',m:`${sentName(i)}이 ${n}단어예요. 둘로 나누거나 덜 중요한 부분을 덜어 내세요.`});
     if(n>0 && n < CONFIG.WORD_MIN) out.push({i,k:'길이',m:`${sentName(i)}이 ${n}단어뿐이에요. 왜·어떻게를 한 마디 더 붙여 보세요.`});
     if(!/[.!?]$/.test(s)) out.push({i,k:'문장 부호',m:`${sentName(i)} 끝에 마침표가 없어요.`,find:s,rep:s+'.'});
@@ -1071,6 +1155,10 @@ function findIssues(){
     .forEach(w=>{ if(!STOP.has(w) && w.length>2) freq[w]=(freq[w]||0)+1; });
   Object.entries(freq).filter(([,c])=>c>=3).forEach(([w,c])=>
     out.push({i:-1,k:'반복',m:`<em>${w}</em> 가 ${c}번 나와요. 한 번은 다른 말로 바꿔 보세요.`}));
+
+  // 철자·문법을 먼저, 표현은 뒤로
+  const order = { '철자':0, '문법':1, '대문자':2, '중복':3, '관사':4, '띄어쓰기':5, '문장 부호':6, '길이':7, '자연스러움':8, '어휘':9, '반복':10 };
+  out.sort((a,b)=> (order[a.k]??99) - (order[b.k]??99));
   return out;
 }
 $('#btn-polish').addEventListener('click', ()=>{
@@ -1086,9 +1174,10 @@ function renderIssues(){
       <div class="m">손볼 곳이 보이지 않아요. 이대로 연습해도 좋습니다.</div></div></div>`;
     return;
   }
+  const hard = { '철자':1, '문법':1, '대문자':1, '중복':1, '관사':1 };
   box.innerHTML = list.map((it,k)=>`
-    <div class="issue"><div class="body">
-      <div class="k">${it.k}</div><div class="m">${it.m}</div>
+    <div class="issue ${hard[it.k]?'hard':''}"><div class="body">
+      <div class="k">${it.k}${it.i>=0?` · ${sentName(it.i)}`:''}</div><div class="m">${it.m}</div>
     </div>${it.rep!==undefined?`<button class="btn quiet sm" data-fix="${k}">고치기</button>`:''}</div>`).join('');
   box.querySelectorAll('[data-fix]').forEach(b=> b.addEventListener('click',()=>{
     const it = list[+b.dataset.fix];
