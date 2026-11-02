@@ -465,6 +465,16 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
           <button type="button" data-mode="hide">원고 숨김</button>
         </div>
       </div>
+      <div class="spread">
+        <span class="muted">연습 범위</span>
+        <div class="seg" id="seg-focus" role="group" aria-label="연습 범위">
+          <button type="button" data-focus="-1" class="on">세 문장 전체</button>
+          <button type="button" data-focus="0">1번만</button>
+          <button type="button" data-focus="1">2번만</button>
+          <button type="button" data-focus="2">3번만</button>
+        </div>
+      </div>
+      <p class="notice info" id="focus-note" hidden></p>
       <div class="script-box" id="script-box"></div>
       <div class="hintbox" id="hintbox" hidden></div>
       <div class="row" id="hint-row" hidden>
@@ -545,8 +555,8 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
 
     <div class="card stack" id="word-card" hidden>
       <h3>다시 말해볼 단어</h3>
+      <p class="muted" style="margin:0">인식되지 않은 단어입니다. 듣기를 누르고 따라 말해 보세요. 한 번 통과하면 체크됩니다.</p>
       <div class="words" id="words"></div>
-      <p class="muted">듣기를 누르고 따라 말하면 됩니다. 한 번 통과하면 체크됩니다.</p>
     </div>
 
     <div class="card stack">
@@ -603,6 +613,16 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
       <h2>다 했습니다</h2>
       <p class="lead" id="done-sub"></p>
       <div class="row" style="justify-content:center"><button class="btn quiet" id="btn-next-round">한 번 더 연습하기</button></div>
+      <div class="shield" style="text-align:left;margin-top:8px">
+        <span>🧹</span>
+        <span><b>여러 사람이 쓰는 기기인가요?</b><br>
+        아래 버튼을 누르면 이 기기에 남아 있는 내 기록이 지워집니다.
+        선생님께 보낸 기록은 그대로 남습니다.</span>
+      </div>
+      <div class="row" style="justify-content:center">
+        <button class="btn quiet" id="btn-wipe">끝내고 나가기</button>
+      </div>
+      <div id="wipe-msg" hidden></div>
     </div>
   </section>
 </main>
@@ -677,6 +697,7 @@ const STOP = new Set(['a','an','the','is','are','was','were','to','of','in','on'
 const S = {
   student:null,
   mode:'show',       // 'show' = 원고 보임, 'hide' = 원고 숨김
+  focus:-1,          // -1 = 세 문장 전체, 0~2 = 그 문장만 연습
   sentences: Array(CONFIG.SENTENCES).fill(''),
   attempts: [],      // {n, mode, seconds, accuracy, wpm, pauses, pauseList, longest, hints, transcript, per}
   last:null,
@@ -1250,10 +1271,18 @@ $('#tts-rate').addEventListener('change', stopSpeak);
 function norm(w){ return String(w).toLowerCase().replace(/[^a-z0-9']/g,''); }
 function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-function buildTargets(){
-  const out = [];
-  S.sentences.forEach((s,si)=> (s||'').trim().split(/\s+/).filter(Boolean)
-    .forEach(raw=> out.push({raw, n:norm(raw), si})));
+/** 연습 대상인 문장 번호들. 한 문장만 고르면 그 문장만 돌려줍니다. */
+function activeSentences(focus){
+  const f = (focus === undefined) ? S.focus : focus;
+  return (f === undefined || f < 0) ? S.sentences.map((_,i)=>i) : [f];
+}
+function buildTargets(focus){
+  const out = [], act = activeSentences(focus);
+  S.sentences.forEach((s,si)=>{
+    if(act.indexOf(si) < 0) return;
+    (s||'').trim().split(/\s+/).filter(Boolean)
+      .forEach(raw=> out.push({raw, n:norm(raw), si}));
+  });
   return out;
 }
 function lcsMatch(target, said){
@@ -1271,8 +1300,8 @@ function lcsMatch(target, said){
   }
   return matched;
 }
-function compare(transcript){
-  const T = buildTargets().filter(t=>t.n);
+function compare(transcript, focus){
+  const T = buildTargets(focus).filter(t=>t.n);
   const said = String(transcript).toLowerCase().split(/\s+/).map(norm).filter(Boolean);
   const matched = lcsMatch(T.map(t=>t.n), said);
   const per = Array.from({length:CONFIG.SENTENCES},()=>({hit:0,tot:0}));
@@ -1286,11 +1315,11 @@ function compare(transcript){
   };
 }
 
-/* --- 원고 보임 / 숨김 --- */
+/* --- 원고 보임 / 숨김, 연습 범위 --- */
 function updateModePill(){
   const p = $('#round-pill');
   p.hidden = false;
-  p.textContent = MODE_LABEL[S.mode];
+  p.textContent = MODE_LABEL[S.mode] + (S.focus<0 ? '' : ` · ${S.focus+1}번 문장`);
 }
 function setMode(m){
   S.mode = m;
@@ -1306,9 +1335,27 @@ $$('#seg-mode button').forEach(b=> b.addEventListener('click', ()=>{
   setMode(b.dataset.mode);
 }));
 
+/** 연습 범위 — 전체 / 한 문장 */
+function setFocus(f){
+  S.focus = f;
+  $$('#seg-focus button').forEach(b=> b.classList.toggle('on', +b.dataset.focus === f));
+  $('#focus-note').hidden = (f < 0);
+  if(f >= 0) $('#focus-note').textContent = `${f+1}번 문장만 연습합니다. 이 연습은 전체 기록에 들어가지 않아요.`;
+  $('#goal-txt').textContent = f < 0
+    ? `세 문장을 끝까지 말하면 돼요. ${CONFIG.MAX_SECONDS}초가 지나면 자동으로 멈춥니다.`
+    : `${f+1}번 문장 하나만 말하면 됩니다.`;
+  updateModePill();
+  renderStageScript();
+  renderReady();
+}
+$$('#seg-focus button').forEach(b=> b.addEventListener('click', ()=>{
+  if(recording) return;
+  setFocus(+b.dataset.focus);
+}));
+
 function setupStage(){
   hintsUsed = 0; updateHintBtn();
-  $('#goal-txt').textContent = `목표 시간은 없습니다. 세 문장을 끝까지 말하면 돼요. ${CONFIG.MAX_SECONDS}초가 지나면 자동으로 멈춥니다.`;
+  setFocus(S.focus);
   setMode(S.mode);
   $('#after-card').hidden = !S.last;
   renderReady();
@@ -1319,7 +1366,9 @@ function renderStageScript(marks){
   $('#script-legend').hidden = !marks;
   box.innerHTML = '';
   let k = 0;
-  S.sentences.forEach(s=>{
+  const act = activeSentences();
+  S.sentences.forEach((s,si)=>{
+    if(act.indexOf(si) < 0) return;
     const line = document.createElement('span'); line.className='s';
     chunkSentence(s).forEach(c=>{
       c.words.forEach(raw=>{
@@ -1337,6 +1386,7 @@ function renderStageScript(marks){
     box.appendChild(line);
   });
   if(S.mode==='hide' && !marks) box.innerHTML = '<span class="muted" style="font-family:var(--font-ui);font-size:14px">원고를 숨겼습니다. 막히면 힌트를 누르세요 — 원고를 잠깐 보여 줍니다.</span>';
+  if(!box.innerHTML) box.innerHTML = '<span class="muted" style="font-family:var(--font-ui);font-size:14px">이 문장이 비어 있어요. 원고 다듬기로 돌아가 채워 주세요.</span>';
 }
 
 /* 힌트 — 원고 전체를 잠깐 보여 줍니다 */
@@ -1350,7 +1400,9 @@ $('#btn-hint').addEventListener('click', ()=>{
   hintsUsed++; updateHintBtn();
   const hb = $('#hintbox');
   hb.hidden = false;
-  hb.innerHTML = S.sentences.map((s,i)=>`<div style="text-align:left">${i+1}. ${esc(s)}</div>`).join('')
+  const act = activeSentences();
+  hb.innerHTML = S.sentences.map((s,i)=> act.indexOf(i)<0 ? '' :
+      `<div style="text-align:left">${i+1}. ${esc(s)}</div>`).join('')
     + `<div class="muted" style="font-family:var(--font-ui);font-size:12px;margin-top:8px">${CONFIG.HINT_MS/1000}초 뒤에 사라집니다</div>`;
   clearTimeout(hintTimer);
   hintTimer = setTimeout(()=>{ hb.hidden = true; }, CONFIG.HINT_MS);
@@ -1456,7 +1508,7 @@ function stopRec(){
   const transcript = heardText();   // 확정되지 않은 끝부분까지 포함합니다
   const r = compare(transcript);
   const att = {
-    n:S.attempts.length+1, mode:S.mode, seconds,
+    n:S.attempts.length+1, mode:S.mode, focus:S.focus, seconds,
     accuracy:r.accuracy, per:r.per,
     wpm: Math.round(r.saidCount/(seconds/60)) || 0,
     pauses, pauseList: pauseList.slice(),
@@ -1500,9 +1552,18 @@ document.addEventListener('keydown', e=>{
    9) 3단계 — 리포트
    ========================================================= */
 function firstFix(a){
-  const weakest = a.per.indexOf(Math.min(...a.per));
+  // 한 문장만 연습한 회차는 그 문장만 놓고 봅니다
+  if(!isFull(a)){
+    const n = a.focus + 1;
+    if(a.accuracy < 70) return {v:`${n}번 문장 더 외우기`, d:`${n}번 문장의 ${a.accuracy}%만 전달됐어요. 끊어 읽기 표시를 보며 소리 내어 세 번 읽고 다시 해 보세요.`};
+    if(a.pauses >= 2) return {v:'막히는 지점 없애기', d:`${n}번 문장 안에서 ${a.pauses}번 멈췄어요. 멈춘 자리 앞뒤를 이어서 연습해 보세요.`};
+    return {v:'전체로 돌아가기', d:`${n}번 문장은 ${a.accuracy}%로 괜찮아요. 이제 세 문장을 이어서 해 보세요.`};
+  }
+  const act = activeSentences(a.focus);
+  const vals = act.map(i=>a.per[i]);
+  const weakest = a.per.indexOf(Math.min(...vals));
   if(a.accuracy < 60) return {v:'내용을 끝까지 말하기', d:`원고의 ${a.accuracy}%만 전달됐어요. 특히 ${weakest+1}번 문장(${a.per[weakest]}%)을 먼저 외워 보세요.`};
-  if(Math.min(...a.per) < 70) return {v:`${weakest+1}번 문장 집중 연습`, d:`다른 문장은 괜찮은데 ${weakest+1}번만 ${a.per[weakest]}%예요. 이 문장만 세 번 더 말해 보세요.`};
+  if(Math.min(...vals) < 70) return {v:`${weakest+1}번 문장 집중 연습`, d:`다른 문장은 괜찮은데 ${weakest+1}번만 ${a.per[weakest]}%예요. 이 문장만 세 번 더 말해 보세요.`};
   if(a.wpm > 170) return {v:'말 속도 줄이기', d:`분당 ${a.wpm}단어로 빨랐어요. / 표시에서 한 번씩 쉬면 듣는 사람이 따라옵니다.`};
   if(a.wpm && a.wpm < 85) return {v:'말 속도 올리기', d:`분당 ${a.wpm}단어로 느렸어요. 문장 안에서는 끊지 말고 이어서 말해 보세요.`};
   if(a.pauses >= 3) return {v:'막히는 지점 없애기', d:`${a.pauses}번 멈췄어요. 어디서 멈췄는지 떠올려 그 부분만 반복해 보세요.`};
@@ -1521,7 +1582,7 @@ function renderPicker(){
   if(card.hidden) return;
   $('#attempt-picker').innerHTML = S.attempts.map((x,i)=>
     `<button class="chip ${i===S.viewing?'on':''}" data-at="${i}">${x.n}회
-      <span class="m">${x.mode==='hide'?'숨김':'보임'} · ${x.accuracy}%</span></button>`).join('');
+      <span class="m">${isFull(x)?'전체':(x.focus+1)+'번'} · ${x.mode==='hide'?'숨김':'보임'} · ${x.accuracy}%</span></button>`).join('');
   $('#attempt-picker').querySelectorAll('[data-at]').forEach(b=>
     b.addEventListener('click', ()=>{ S.viewing = +b.dataset.at; renderReport(); }));
 }
@@ -1530,12 +1591,22 @@ function renderReport(){
   const isLatest = (S.viewing === S.attempts.length-1);
   renderPicker();
 
+  const scope = isFull(a) ? '세 문장 전체' : `${a.focus+1}번 문장만`;
   $('#report-title').textContent = `${a.n}번째 연습 리포트`;
   $('#report-sub').textContent =
-    `${MODE_LABEL[a.mode]} · ${a.seconds}초` + (isLatest ? '' : ' · 지난 기록');
+    `${scope} · ${MODE_LABEL[a.mode]} · ${a.seconds}초` + (isLatest ? '' : ' · 지난 기록');
 
   const f = firstFix(a);
-  $('#onething').innerHTML = `<div class="k">가장 먼저 고칠 한 가지</div><div class="v">${esc(f.v)}</div><div class="d">${esc(f.d)}</div>`;
+  // 약한 문장이 있으면 그 문장만 바로 연습할 수 있게 합니다
+  const weak = isFull(a) ? a.per.indexOf(Math.min(...a.per.slice(0,CONFIG.SENTENCES))) : -1;
+  const showJump = isLatest && weak >= 0 && a.per[weak] < 85 && S.sentences[weak];
+  $('#onething').innerHTML =
+    `<div class="k">가장 먼저 고칠 한 가지</div><div class="v">${esc(f.v)}</div><div class="d">${esc(f.d)}</div>` +
+    (showJump ? `<div class="row" style="margin-top:10px">
+       <button class="btn sm" id="btn-focus-weak">${weak+1}번 문장만 연습하기 →</button></div>` : '');
+  if(showJump){
+    $('#btn-focus-weak').addEventListener('click', ()=> againWith(a.mode, weak));
+  }
 
   const paceOk = a.wpm>=85 && a.wpm<=170;
   $('#scores').innerHTML = `
@@ -1555,8 +1626,10 @@ function renderReport(){
   }
 
   // 문장별 + 대본 vs 발화
-  const r = compare(a.transcript);
+  const r = compare(a.transcript, a.focus);
+  const act = activeSentences(a.focus);
   $('#pane-script').innerHTML = S.sentences.map((s,i)=>{
+    if(act.indexOf(i) < 0) return '';
     let k=0, html='';
     const marks = r.marks.filter(m=>m.si===i);
     s.trim().split(/\s+/).filter(Boolean).forEach(raw=>{
@@ -1576,8 +1649,7 @@ function renderReport(){
     $('#words').innerHTML = uniq.map((w,i)=>`
       <div class="wcard" id="wc-${i}">
         <div class="w">${esc(w)}</div>
-        <div class="c">인식되지 않은 단어</div>
-        <div class="row">
+        <div class="row" style="margin-top:8px">
           <button class="btn quiet sm" data-say="${esc(w)}">듣기</button>
           <button class="btn quiet sm" data-try="${esc(w)}" data-i="${i}">따라 말하기</button>
         </div>
@@ -1588,12 +1660,13 @@ function renderReport(){
   }
 
   // 기록 표
-  $('#attempts').innerHTML = `<thead><tr><th>회차</th><th>원고</th><th>일치도</th><th>속도</th><th>멈춤</th><th>힌트</th><th>시간</th></tr></thead><tbody>` +
+  $('#attempts').innerHTML = `<thead><tr><th>회차</th><th>범위</th><th>원고</th><th>일치도</th><th>속도</th><th>멈춤</th><th>힌트</th><th>시간</th></tr></thead><tbody>` +
     S.attempts.map(x=>`<tr${x===a?' style="font-weight:700"':''}><td>${x.n}</td>` +
+      `<td>${isFull(x)?'전체':`<span class="mode-tag">${x.focus+1}번만</span>`}</td>` +
       `<td><span class="mode-tag ${x.mode==='hide'?'hide':''}">${MODE_LABEL[x.mode]||'원고 보임'}</span></td>` +
       `<td>${x.accuracy}%</td><td>${x.wpm}</td><td>${x.pauses}</td>` +
       `<td>${x.mode==='hide'?x.hints:'–'}</td><td>${x.seconds}초</td></tr>`).join('') + `</tbody>`;
-  $('#hist-note').textContent = `이 기기에 저장된 기록입니다`;
+  $('#hist-note').textContent = `전체 연습만 선생님께 기록됩니다`;
 
   // 원고 보임 vs 숨김
   const bs = bestOf('show'), bh = bestOf('hide');
@@ -1618,14 +1691,20 @@ function renderReport(){
   } else rc.hidden = true;
 
 }
+/** 전체 연습만 공식 기록으로 봅니다. 한 문장 연습까지 섞으면 수치가 부풀어요. */
+function isFull(a){ return (a.focus === undefined || a.focus < 0); }
 function bestOf(mode){
-  const list = S.attempts.filter(a=>(a.mode||'show')===mode);
+  const list = S.attempts.filter(a=>(a.mode||'show')===mode && isFull(a));
   return list.length ? list.reduce((a,b)=> b.accuracy>=a.accuracy?b:a) : null;
 }
 /* 리포트에서 바로 한 번 더 연습하기 */
-function againWith(mode){ S.mode = mode; go(2); resetStage(); }
-$('#btn-again-hide').addEventListener('click', ()=>againWith('hide'));
-$('#btn-again-show').addEventListener('click', ()=>againWith('show'));
+function againWith(mode, focus){
+  S.mode = mode;
+  if(focus !== undefined) S.focus = focus;
+  go(2); resetStage();
+}
+$('#btn-again-hide').addEventListener('click', ()=>againWith('hide',-1));
+$('#btn-again-show').addEventListener('click', ()=>againWith('show',-1));
 function speak(w){
   try{
     const u = new SpeechSynthesisUtterance(w);
@@ -1654,7 +1733,9 @@ function tryWord(word, i, btn){
    10) 4단계 — 자기점검 · 성찰
    ========================================================= */
 function renderChecks(){
-  const a = S.last;
+  // 옆에 붙는 숫자는 '세 문장 전체' 연습 기준이어야 뜻이 맞습니다
+  const full = S.attempts.filter(isFull);
+  const a = full.length ? full[full.length-1] : null;
   const box = $('#check-list'); box.innerHTML='';
   CHECKS.forEach(c=>{
     const m = c.metric ? c.metric(a) : '';
@@ -1697,15 +1778,15 @@ function renderReview(){
 /** 지금까지의 내용을 서버가 받을 모양으로 만듭니다. */
 function buildPayload(action, oneAttempt){
   const bs=bestOf('show'), bh=bestOf('hide');
-  const slim = a=>({n:a.n, mode:MODE_LABEL[a.mode]||'원고 보임', seconds:a.seconds,
+  const slim = a=>({n:a.n, mode:(isFull(a)?'':`${a.focus+1}번만 · `)+(MODE_LABEL[a.mode]||'원고 보임'), seconds:a.seconds,
                     accuracy:a.accuracy, wpm:a.wpm, pauses:a.pauses, hints:a.hints});
   return {
     action, activity:CONFIG.ACTIVITY,
     grade:S.student.grade, num:S.student.num, name:S.student.name,
     sentences:S.sentences,
     attemptCount:S.attempts.length,
-    hideCount:S.attempts.filter(a=>a.mode==='hide').length,
-    lastMode: S.last ? MODE_LABEL[S.last.mode] : '',
+    hideCount:S.attempts.filter(a=>a.mode==='hide' && isFull(a)).length,
+    lastMode: S.last ? (isFull(S.last)?'':`${S.last.focus+1}번만 · `)+MODE_LABEL[S.last.mode] : '',
     bestShow: bs?{accuracy:bs.accuracy,seconds:bs.seconds,wpm:bs.wpm,pauses:bs.pauses}:null,
     bestHide: bh?{accuracy:bh.accuracy,seconds:bh.seconds,wpm:bh.wpm,pauses:bh.pauses,hints:bh.hints}:null,
     // 방금 끝난 연습 하나만 보내면 서버가 그것만 기록합니다
@@ -1780,6 +1861,32 @@ $('#btn-submit').addEventListener('click', async ()=>{
   }
 });
 $('#btn-next-round').addEventListener('click', ()=>{ S.submitted=false; go(2); });
+
+/* --- 끝내고 나가기 — 이 기기에 남은 내 기록을 지웁니다 --- */
+let wipeArmed = false;
+$('#btn-wipe').addEventListener('click', ()=>{
+  const btn = $('#btn-wipe');
+  if(!wipeArmed){
+    wipeArmed = true;
+    btn.textContent = '정말 지울까요? 한 번 더 누르기';
+    btn.classList.add('danger');
+    alertBox('#wipe-msg','지우면 이 기기에서 내가 쓴 문장과 연습 기록을 다시 볼 수 없어요.','warn');
+    setTimeout(()=>{                      // 10초 안에 안 누르면 되돌립니다
+      if(!wipeArmed) return;
+      wipeArmed = false;
+      btn.textContent = '끝내고 나가기';
+      btn.classList.remove('danger');
+      $('#wipe-msg').hidden = true;
+    }, 10000);
+    return;
+  }
+  try{
+    const k = storeKey(); if(k) localStorage.removeItem(k);
+  }catch(e){}
+  clearTimeout(saveTimer); saveTimer = null;
+  savedOnce = true;                       // 창을 닫을 때 붙잡지 않도록
+  location.reload();
+});
 
 /* =========================================================
    12) 공통
