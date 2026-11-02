@@ -469,9 +469,9 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
         <span class="muted">연습 범위</span>
         <div class="seg" id="seg-focus" role="group" aria-label="연습 범위">
           <button type="button" data-focus="-1" class="on">세 문장 전체</button>
-          <button type="button" data-focus="0">1번만</button>
-          <button type="button" data-focus="1">2번만</button>
-          <button type="button" data-focus="2">3번만</button>
+          <button type="button" data-focus="0">첫 문장만</button>
+          <button type="button" data-focus="1">두 번째 문장만</button>
+          <button type="button" data-focus="2">세 번째 문장만</button>
         </div>
       </div>
       <p class="notice info" id="focus-note" hidden></p>
@@ -670,6 +670,9 @@ const CHECKS = [
   { id:'c4', t:'너무 빠르지도 느리지도 않았다', d:'듣는 사람이 따라올 수 있는 속도였나요?', metric:a=>a?`${a.wpm} wpm`:'' }
 ];
 const MODE_LABEL = { show:'원고 보임', hide:'원고 숨김' };
+/** 문장 번호를 부르는 말. 0 → '첫 문장' */
+const ORD = ['첫','두 번째','세 번째','네 번째','다섯 번째'];
+function sentName(i){ return (ORD[i] || (i+1)+'번째') + ' 문장'; }
 
 /* 다듬기 규칙 — AI 없이 이 기기 안에서 돕니다 */
 const WEAK = {
@@ -1047,10 +1050,10 @@ function findIssues(){
   S.sentences.forEach((raw,i)=>{
     const s = (raw||'').trim(); if(!s) return;
     const n = words(s);
-    if(n > CONFIG.WORD_MAX) out.push({i,k:'길이',m:`${i+1}번 문장이 ${n}단어예요. 둘로 나누거나 덜 중요한 부분을 덜어 내세요.`});
-    if(n>0 && n < CONFIG.WORD_MIN) out.push({i,k:'길이',m:`${i+1}번 문장이 ${n}단어뿐이에요. 왜·어떻게를 한 마디 더 붙여 보세요.`});
-    if(!/[.!?]$/.test(s)) out.push({i,k:'문장 부호',m:`${i+1}번 문장 끝에 마침표가 없어요.`,find:s,rep:s+'.'});
-    if(/^[a-z]/.test(s)) out.push({i,k:'대문자',m:`${i+1}번 문장이 소문자로 시작해요.`,find:s,rep:s[0].toUpperCase()+s.slice(1)});
+    if(n > CONFIG.WORD_MAX) out.push({i,k:'길이',m:`${sentName(i)}이 ${n}단어예요. 둘로 나누거나 덜 중요한 부분을 덜어 내세요.`});
+    if(n>0 && n < CONFIG.WORD_MIN) out.push({i,k:'길이',m:`${sentName(i)}이 ${n}단어뿐이에요. 왜·어떻게를 한 마디 더 붙여 보세요.`});
+    if(!/[.!?]$/.test(s)) out.push({i,k:'문장 부호',m:`${sentName(i)} 끝에 마침표가 없어요.`,find:s,rep:s+'.'});
+    if(/^[a-z]/.test(s)) out.push({i,k:'대문자',m:`${sentName(i)}이 소문자로 시작해요.`,find:s,rep:s[0].toUpperCase()+s.slice(1)});
     CONTRACT.forEach(([a,b])=>{
       const re = new RegExp('\\b'+a.replace(/ /g,'\\s+')+'\\b','i');
       const m = s.match(re);
@@ -1319,7 +1322,7 @@ function compare(transcript, focus){
 function updateModePill(){
   const p = $('#round-pill');
   p.hidden = false;
-  p.textContent = MODE_LABEL[S.mode] + (S.focus<0 ? '' : ` · ${S.focus+1}번 문장`);
+  p.textContent = MODE_LABEL[S.mode] + (S.focus<0 ? '' : ' · ' + sentName(S.focus));
 }
 function setMode(m){
   S.mode = m;
@@ -1340,10 +1343,10 @@ function setFocus(f){
   S.focus = f;
   $$('#seg-focus button').forEach(b=> b.classList.toggle('on', +b.dataset.focus === f));
   $('#focus-note').hidden = (f < 0);
-  if(f >= 0) $('#focus-note').textContent = `${f+1}번 문장만 연습합니다. 이 연습은 전체 기록에 들어가지 않아요.`;
+  if(f >= 0) $('#focus-note').textContent = `${sentName(f)}만 연습합니다. 이 연습은 전체 기록에 들어가지 않아요.`;
   $('#goal-txt').textContent = f < 0
     ? `세 문장을 끝까지 말하면 돼요. ${CONFIG.MAX_SECONDS}초가 지나면 자동으로 멈춥니다.`
-    : `${f+1}번 문장 하나만 말하면 됩니다.`;
+    : `${sentName(f)} 하나만 말하면 됩니다.`;
   updateModePill();
   renderStageScript();
   renderReady();
@@ -1554,16 +1557,16 @@ document.addEventListener('keydown', e=>{
 function firstFix(a){
   // 한 문장만 연습한 회차는 그 문장만 놓고 봅니다
   if(!isFull(a)){
-    const n = a.focus + 1;
-    if(a.accuracy < 70) return {v:`${n}번 문장 더 외우기`, d:`${n}번 문장의 ${a.accuracy}%만 전달됐어요. 끊어 읽기 표시를 보며 소리 내어 세 번 읽고 다시 해 보세요.`};
-    if(a.pauses >= 2) return {v:'막히는 지점 없애기', d:`${n}번 문장 안에서 ${a.pauses}번 멈췄어요. 멈춘 자리 앞뒤를 이어서 연습해 보세요.`};
-    return {v:'전체로 돌아가기', d:`${n}번 문장은 ${a.accuracy}%로 괜찮아요. 이제 세 문장을 이어서 해 보세요.`};
+    const n = sentName(a.focus);
+    if(a.accuracy < 70) return {v:`${n} 더 외우기`, d:`${n}의 ${a.accuracy}%만 전달됐어요. 끊어 읽기 표시를 보며 소리 내어 세 번 읽고 다시 해 보세요.`};
+    if(a.pauses >= 2) return {v:'막히는 지점 없애기', d:`${n} 안에서 ${a.pauses}번 멈췄어요. 멈춘 자리 앞뒤를 이어서 연습해 보세요.`};
+    return {v:'전체로 돌아가기', d:`${n}은 ${a.accuracy}%로 괜찮아요. 이제 세 문장을 이어서 해 보세요.`};
   }
   const act = activeSentences(a.focus);
   const vals = act.map(i=>a.per[i]);
   const weakest = a.per.indexOf(Math.min(...vals));
-  if(a.accuracy < 60) return {v:'내용을 끝까지 말하기', d:`원고의 ${a.accuracy}%만 전달됐어요. 특히 ${weakest+1}번 문장(${a.per[weakest]}%)을 먼저 외워 보세요.`};
-  if(Math.min(...vals) < 70) return {v:`${weakest+1}번 문장 집중 연습`, d:`다른 문장은 괜찮은데 ${weakest+1}번만 ${a.per[weakest]}%예요. 이 문장만 세 번 더 말해 보세요.`};
+  if(a.accuracy < 60) return {v:'내용을 끝까지 말하기', d:`원고의 ${a.accuracy}%만 전달됐어요. 특히 ${sentName(weakest)}(${a.per[weakest]}%)을 먼저 외워 보세요.`};
+  if(Math.min(...vals) < 70) return {v:`${sentName(weakest)} 집중 연습`, d:`다른 문장은 괜찮은데 ${sentName(weakest)}만 ${a.per[weakest]}%예요. 이 문장만 세 번 더 말해 보세요.`};
   if(a.wpm > 170) return {v:'말 속도 줄이기', d:`분당 ${a.wpm}단어로 빨랐어요. / 표시에서 한 번씩 쉬면 듣는 사람이 따라옵니다.`};
   if(a.wpm && a.wpm < 85) return {v:'말 속도 올리기', d:`분당 ${a.wpm}단어로 느렸어요. 문장 안에서는 끊지 말고 이어서 말해 보세요.`};
   if(a.pauses >= 3) return {v:'막히는 지점 없애기', d:`${a.pauses}번 멈췄어요. 어디서 멈췄는지 떠올려 그 부분만 반복해 보세요.`};
@@ -1591,7 +1594,7 @@ function renderReport(){
   const isLatest = (S.viewing === S.attempts.length-1);
   renderPicker();
 
-  const scope = isFull(a) ? '세 문장 전체' : `${a.focus+1}번 문장만`;
+  const scope = isFull(a) ? '세 문장 전체' : sentName(a.focus) + '만';
   $('#report-title').textContent = `${a.n}번째 연습 리포트`;
   $('#report-sub').textContent =
     `${scope} · ${MODE_LABEL[a.mode]} · ${a.seconds}초` + (isLatest ? '' : ' · 지난 기록');
@@ -1603,7 +1606,7 @@ function renderReport(){
   $('#onething').innerHTML =
     `<div class="k">가장 먼저 고칠 한 가지</div><div class="v">${esc(f.v)}</div><div class="d">${esc(f.d)}</div>` +
     (showJump ? `<div class="row" style="margin-top:10px">
-       <button class="btn sm" id="btn-focus-weak">${weak+1}번 문장만 연습하기 →</button></div>` : '');
+       <button class="btn sm" id="btn-focus-weak">${sentName(weak)}만 연습하기 →</button></div>` : '');
   if(showJump){
     $('#btn-focus-weak').addEventListener('click', ()=> againWith(a.mode, weak));
   }
@@ -1662,7 +1665,7 @@ function renderReport(){
   // 기록 표
   $('#attempts').innerHTML = `<thead><tr><th>회차</th><th>범위</th><th>원고</th><th>일치도</th><th>속도</th><th>멈춤</th><th>힌트</th><th>시간</th></tr></thead><tbody>` +
     S.attempts.map(x=>`<tr${x===a?' style="font-weight:700"':''}><td>${x.n}</td>` +
-      `<td>${isFull(x)?'전체':`<span class="mode-tag">${x.focus+1}번만</span>`}</td>` +
+      `<td>${isFull(x)?'전체':`<span class="mode-tag">${sentName(x.focus)}</span>`}</td>` +
       `<td><span class="mode-tag ${x.mode==='hide'?'hide':''}">${MODE_LABEL[x.mode]||'원고 보임'}</span></td>` +
       `<td>${x.accuracy}%</td><td>${x.wpm}</td><td>${x.pauses}</td>` +
       `<td>${x.mode==='hide'?x.hints:'–'}</td><td>${x.seconds}초</td></tr>`).join('') + `</tbody>`;
@@ -1778,7 +1781,7 @@ function renderReview(){
 /** 지금까지의 내용을 서버가 받을 모양으로 만듭니다. */
 function buildPayload(action, oneAttempt){
   const bs=bestOf('show'), bh=bestOf('hide');
-  const slim = a=>({n:a.n, mode:(isFull(a)?'':`${a.focus+1}번만 · `)+(MODE_LABEL[a.mode]||'원고 보임'), seconds:a.seconds,
+  const slim = a=>({n:a.n, mode:(isFull(a)?'':sentName(a.focus) + '만 · ')+(MODE_LABEL[a.mode]||'원고 보임'), seconds:a.seconds,
                     accuracy:a.accuracy, wpm:a.wpm, pauses:a.pauses, hints:a.hints});
   return {
     action, activity:CONFIG.ACTIVITY,
@@ -1786,7 +1789,7 @@ function buildPayload(action, oneAttempt){
     sentences:S.sentences,
     attemptCount:S.attempts.length,
     hideCount:S.attempts.filter(a=>a.mode==='hide' && isFull(a)).length,
-    lastMode: S.last ? (isFull(S.last)?'':`${S.last.focus+1}번만 · `)+MODE_LABEL[S.last.mode] : '',
+    lastMode: S.last ? (isFull(S.last)?'':sentName(S.last.focus) + '만 · ')+MODE_LABEL[S.last.mode] : '',
     bestShow: bs?{accuracy:bs.accuracy,seconds:bs.seconds,wpm:bs.wpm,pauses:bs.pauses}:null,
     bestHide: bh?{accuracy:bh.accuracy,seconds:bh.seconds,wpm:bh.wpm,pauses:bh.pauses,hints:bh.hints}:null,
     // 방금 끝난 연습 하나만 보내면 서버가 그것만 기록합니다
