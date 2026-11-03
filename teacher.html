@@ -193,7 +193,7 @@ h3{font-size:12px;margin:0;letter-spacing:.07em;text-transform:uppercase;color:v
       <div class="spread">
         <h3>번호별 현황</h3>
         <span class="muted">
-          <span class="dot done"></span>다 했어요
+          <span class="dot done"></span>제출함
           <span class="dot work" style="margin-left:9px"></span>하는 중
           <span class="dot none" style="margin-left:9px"></span>미참여
         </span>
@@ -325,7 +325,7 @@ function render(){
     <div class="sum"><div class="k">전체</div><div class="v">${size}<span class="u">명</span></div></div>
     <div class="sum work"><div class="k">들어옴</div><div class="v">${inList.length}<span class="u">명</span></div></div>
     <div class="sum miss"><div class="k">미참여</div><div class="v">${missing.length}<span class="u">명</span></div></div>
-    <div class="sum done"><div class="k">다 했어요</div><div class="v">${done.length}<span class="u">명</span></div></div>
+    <div class="sum done"><div class="k">제출함</div><div class="v">${done.length}<span class="u">명</span></div></div>
     <div class="sum"><div class="k">평균 연습</div><div class="v">${inList.length?(totalTry/inList.length).toFixed(1):'0'}<span class="u">회</span></div></div>
     <div class="sum"><div class="k">원고 숨김 시도</div><div class="v">${hideTried.length}<span class="u">명</span></div></div>`;
 
@@ -389,8 +389,8 @@ function renderDetail(s){
           <h3 style="margin-bottom:6px">성찰</h3>
           <div class="kv">
             ${line('발전된 부분', rf[0])}
-            ${line('어려운 것', rf[1])}
-            ${line('다음에 할 것', rf[2])}
+            ${line('어려운 부분', rf[1])}
+            ${line('말할 때 지킬 것', rf[2])}
           </div></div>` : ''}
         ${s.transcript ? `<div>
           <h3 style="margin-bottom:6px">마지막으로 말한 내용</h3>
