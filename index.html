@@ -779,7 +779,23 @@ let rec=null, recording=false, lastHeard=0, pauses=0, pauseList=[];
    interimText  : 아직 확정되지 않은 끝부분 */
 let committedText='', sessionText='', interimText='', finalText='';
 /** 확정된 말 + 아직 확정 안 된 말. 끝낼 때 둘 다 써야 내용이 사라지지 않습니다. */
-function heardText(){ return (finalText + ' ' + interimText).replace(/\s+/g,' ').trim(); }
+/**
+ * 두 토막을 이어 붙이되, 겹치는 부분은 한 번만 남깁니다.
+ * 크롬은 말이 자라는 중간 단계("I" → "I want" → "I want to")를 따로 보내기도 하고,
+ * 이미 확정한 말을 다음 신호에 또 싣기도 합니다. 겹침을 지워야 되풀이가 안 쌓입니다.
+ */
+function joinText(a, b){
+  a = (a||'').trim(); b = (b||'').trim();
+  if(!a) return b;
+  if(!b) return a;
+  const aw = a.split(/\s+/), bw = b.split(/\s+/);
+  for(let n = Math.min(aw.length, bw.length); n > 0; n--){
+    if(aw.slice(-n).join(' ').toLowerCase() === bw.slice(0, n).join(' ').toLowerCase())
+      return aw.concat(bw.slice(n)).join(' ');
+  }
+  return a + ' ' + b;
+}
+function heardText(){ return joinText(finalText, interimText); }
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
@@ -1703,17 +1719,17 @@ function startRec(){
       });
     }
     lastHeard = now;
-    // 크롬은 이미 확정된 결과를 다음 이벤트에 또 실어 보냅니다.
-    // 그래서 더하지 않고, 받은 목록으로 매번 처음부터 다시 만듭니다.
+    // 받은 목록을 겹침 없이 이어 붙입니다. 같은 말이 또 와도 쌓이지 않습니다.
     let fin = '', interim = '';
     for(let i=0;i<e.results.length;i++){
       const r = e.results[i];
-      if(r.isFinal) fin += r[0].transcript + ' '; else interim += r[0].transcript;
+      if(r.isFinal) fin = joinText(fin, r[0].transcript);
+      else interim = joinText(interim, r[0].transcript);
     }
-    sessionText = fin;
+    sessionText = joinText(sessionText, fin);
     interimText = interim;
-    finalText = committedText + sessionText;
-    $('#live').innerHTML = esc(finalText) + `<span class="interim">${esc(interim)}</span>`;
+    finalText = joinText(committedText, sessionText);
+    $('#live').innerHTML = esc(finalText) + (interim ? ` <span class="interim">${esc(interim)}</span>` : '');
     liveMark(heardText());
   };
   rec.onerror = e=>{
@@ -1726,7 +1742,7 @@ function startRec(){
   // 인식이 저절로 끊기면 다시 켭니다. 그때 목록이 비워지므로 지금까지 말한 것을 챙겨 둡니다.
   rec.onend = ()=>{
     if(!recording) return;
-    committedText += sessionText;
+    committedText = joinText(committedText, sessionText);
     sessionText = ''; interimText = '';
     try{ rec.start(); }catch(e){}
   };
