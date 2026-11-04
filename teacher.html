@@ -313,7 +313,8 @@ function render(){
   const extra = Object.keys(by).map(Number).filter(n=>roster.indexOf(n)<0).sort((a,b)=>a-b);
   const nums = roster.concat(extra);
   const size = roster.length;
-  const inList  = nums.filter(n=>by[n]);
+  // 요약은 명단에 있는 번호만 셉니다. 명단 밖은 따로 알려 줍니다.
+  const inList  = roster.filter(n=>by[n]);
   const missing = roster.filter(n=>!by[n]);
   const done    = inList.filter(n=>by[n].status==='제출함');
   const totalTry = inList.reduce((a,n)=>a+(Number(by[n].attempts)||0),0);
@@ -327,7 +328,8 @@ function render(){
     <div class="sum miss"><div class="k">미참여</div><div class="v">${missing.length}<span class="u">명</span></div></div>
     <div class="sum done"><div class="k">제출함</div><div class="v">${done.length}<span class="u">명</span></div></div>
     <div class="sum"><div class="k">평균 연습</div><div class="v">${inList.length?(totalTry/inList.length).toFixed(1):'0'}<span class="u">회</span></div></div>
-    <div class="sum"><div class="k">원고 숨김 시도</div><div class="v">${hideTried.length}<span class="u">명</span></div></div>`;
+    <div class="sum"><div class="k">원고 숨김 시도</div><div class="v">${hideTried.length}<span class="u">명</span></div></div>
+    ${extra.length?`<div class="sum miss"><div class="k">명단 밖</div><div class="v">${extra.length}<span class="u">명</span></div></div>`:''}`;
 
   $('#missing-card').hidden = !missing.length;
   $('#missing').innerHTML = missing.map(n=>`<span class="mnum">${n}</span>`).join('');

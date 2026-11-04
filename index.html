@@ -497,6 +497,7 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
 
     <!-- ② 말하기 -->
     <div class="card stack">
+      <h3>소리 내어 말하기</h3>
       <div class="miclamp">
         <div class="clock" id="clock">0:00</div>
         <div class="goal" id="goal-txt"></div>
@@ -687,7 +688,7 @@ const CHECKS = [
   { id:'c1', t:'세 문장을 모두 말했다',        d:'중간에 빠뜨린 문장 없이 끝까지 말했나요?', metric:a=>a?`일치도 ${a.accuracy}%`:'' },
   { id:'c2', t:'원고를 숨기고 말해 보았다',    d:'마지막에는 원고 없이 해 보았나요?', metric:a=>a&&a.mode==='hide'?`힌트 ${a.hints}회`:'' },
   { id:'c3', t:'끝까지 또박또박 말했다',       d:'뒷부분에서 목소리가 작아지지 않았나요?', metric:a=>a?`멈춤 ${a.pauses}회`:'' },
-  { id:'c4', t:'너무 빠르지도 느리지도 않았다', d:'듣는 사람이 따라올 수 있는 속도였나요?', metric:a=>a?`${a.wpm} wpm`:'' }
+  { id:'c4', t:'너무 빠르지도 느리지도 않았다', d:'듣는 사람이 따라올 수 있는 속도였나요?', metric:a=>(a&&paceKnown(a))?`${a.wpm} wpm`:'' }
 ];
 const MODE_LABEL = { show:'원고 보임', hide:'원고 숨김' };
 /** 문장 번호를 부르는 말. 0 → '첫 문장' */
@@ -772,7 +773,11 @@ const S = {
 };
 const ONLINE = !!CONFIG.API_URL;
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec=null, recording=false, finalText='', interimText='', lastHeard=0, pauses=0, pauseList=[];
+let rec=null, recording=false, lastHeard=0, pauses=0, pauseList=[];
+/* committedText: 인식이 끊겼다 다시 켜지기 전까지 말한 것
+   sessionText  : 지금 켜져 있는 인식에서 확정된 말
+   interimText  : 아직 확정되지 않은 끝부분 */
+let committedText='', sessionText='', interimText='', finalText='';
 /** 확정된 말 + 아직 확정 안 된 말. 끝낼 때 둘 다 써야 내용이 사라지지 않습니다. */
 function heardText(){ return (finalText + ' ' + interimText).replace(/\s+/g,' ').trim(); }
 const $ = s => document.querySelector(s);
@@ -1679,7 +1684,8 @@ function startCountdown(){
 }
 function startRec(){
   dropAudioTrack();            // 음량 측정용 마이크를 놓아 주어야 음성 인식이 잡습니다
-  finalText=''; interimText=''; pauses=0; pauseList=[]; lastHeard=Date.now();
+  committedText=''; sessionText=''; interimText=''; finalText='';
+  pauses=0; pauseList=[]; lastHeard=Date.now();
   $('#live').textContent='';
   $('#hintbox').hidden = true;
   renderStageScript();
@@ -1697,12 +1703,16 @@ function startRec(){
       });
     }
     lastHeard = now;
-    let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      const r=e.results[i];
-      if(r.isFinal) finalText += r[0].transcript + ' '; else interim += r[0].transcript;
+    // 크롬은 이미 확정된 결과를 다음 이벤트에 또 실어 보냅니다.
+    // 그래서 더하지 않고, 받은 목록으로 매번 처음부터 다시 만듭니다.
+    let fin = '', interim = '';
+    for(let i=0;i<e.results.length;i++){
+      const r = e.results[i];
+      if(r.isFinal) fin += r[0].transcript + ' '; else interim += r[0].transcript;
     }
+    sessionText = fin;
     interimText = interim;
+    finalText = committedText + sessionText;
     $('#live').innerHTML = esc(finalText) + `<span class="interim">${esc(interim)}</span>`;
     liveMark(heardText());
   };
@@ -1713,7 +1723,13 @@ function startRec(){
       stopRec();
     }
   };
-  rec.onend = ()=>{ if(recording){ try{ rec.start(); }catch(e){} } };
+  // 인식이 저절로 끊기면 다시 켭니다. 그때 목록이 비워지므로 지금까지 말한 것을 챙겨 둡니다.
+  rec.onend = ()=>{
+    if(!recording) return;
+    committedText += sessionText;
+    sessionText = ''; interimText = '';
+    try{ rec.start(); }catch(e){}
+  };
   try{ rec.start(); }catch(e){}
   recording = true;
   t0 = Date.now(); timer = setInterval(tick,200); tick();
@@ -1806,8 +1822,8 @@ function firstFix(a){
   const weakest = a.per.indexOf(Math.min(...vals));
   if(a.accuracy < 60) return {v:'내용을 끝까지 말하기', d:`원고의 ${a.accuracy}%만 전달됐어요. 특히 ${sentName(weakest)}(${a.per[weakest]}%)을 먼저 외워 보세요.`};
   if(Math.min(...vals) < 70) return {v:`${sentName(weakest)} 집중 연습`, d:`다른 문장은 괜찮은데 ${sentName(weakest)}만 ${a.per[weakest]}%예요. 이 문장만 세 번 더 말해 보세요.`};
-  if(a.wpm > 170) return {v:'말 속도 줄이기', d:`분당 ${a.wpm}단어로 빨랐어요. / 표시에서 한 번씩 쉬면 듣는 사람이 따라옵니다.`};
-  if(a.wpm && a.wpm < 85) return {v:'말 속도 올리기', d:`분당 ${a.wpm}단어로 느렸어요. 문장 안에서는 끊지 말고 이어서 말해 보세요.`};
+  if(paceKnown(a) && a.wpm > 170) return {v:'말 속도 줄이기', d:`분당 ${a.wpm}단어로 빨랐어요. / 표시에서 한 번씩 쉬면 듣는 사람이 따라옵니다.`};
+  if(paceKnown(a) && a.wpm < 85) return {v:'말 속도 올리기', d:`분당 ${a.wpm}단어로 느렸어요. 문장 안에서는 끊지 말고 이어서 말해 보세요.`};
   if(a.pauses >= 3) return {v:'막히는 지점 없애기', d:`${a.pauses}번 멈췄어요. 어디서 멈췄는지 떠올려 그 부분만 반복해 보세요.`};
   if(a.mode==='hide' && a.hints>=3) return {v:'외우기', d:`힌트를 ${a.hints}번 썼어요. 가장 많이 막힌 문장을 소리 내어 세 번 읽어 보세요.`};
   if(a.mode==='show') return {v:'원고 숨기고 해 보기', d:'원고를 보면서는 충분히 말했어요. 이제 숨긴 채로 한 번 해 보세요.'};
@@ -1850,10 +1866,10 @@ function renderReport(){
     $('#btn-focus-weak').addEventListener('click', ()=> againWith(a.mode, weak));
   }
 
-  const paceOk = a.wpm>=85 && a.wpm<=170;
+  const paceOk = paceKnown(a) && a.wpm>=85 && a.wpm<=170;
   $('#scores').innerHTML = `
     <div class="score ${a.accuracy>=80?'good':'warn'}"><div class="k">원고 일치도</div><div class="v">${a.accuracy}<span class="u">%</span></div></div>
-    <div class="score ${paceOk?'good':'warn'}"><div class="k">말 속도</div><div class="v">${a.wpm}<span class="u">wpm</span></div></div>
+    <div class="score ${paceKnown(a)?(paceOk?'good':'warn'):''}"><div class="k">말 속도</div><div class="v">${paceKnown(a)?a.wpm:'–'}${paceKnown(a)?'<span class="u">wpm</span>':''}</div></div>
     <div class="score ${a.pauses<3?'good':'warn'}"><div class="k">멈춤</div><div class="v">${a.pauses}<span class="u">회</span></div></div>
     <div class="score"><div class="k">걸린 시간</div><div class="v">${a.seconds}<span class="u">초</span></div></div>
     ${a.mode==='hide'?`<div class="score ${a.hints<3?'good':'warn'}"><div class="k">힌트</div><div class="v">${a.hints}<span class="u">회</span></div></div>`:''}`;
@@ -1906,7 +1922,7 @@ function renderReport(){
     S.attempts.map(x=>`<tr${x===a?' style="font-weight:700"':''}><td>${x.n}</td>` +
       `<td>${isFull(x)?'전체':`<span class="mode-tag">${sentName(x.focus)}</span>`}</td>` +
       `<td><span class="mode-tag ${x.mode==='hide'?'hide':''}">${MODE_LABEL[x.mode]||'원고 보임'}</span></td>` +
-      `<td>${x.accuracy}%</td><td>${x.wpm}</td><td>${x.pauses}</td>` +
+      `<td>${x.accuracy}%</td><td>${paceKnown(x)?x.wpm:'–'}</td><td>${x.pauses}</td>` +
       `<td>${x.mode==='hide'?x.hints:'–'}</td><td>${x.seconds}초</td></tr>`).join('') + `</tbody>`;
   $('#hist-note').textContent = `전체 연습만 선생님께 기록됩니다`;
 
@@ -1935,6 +1951,8 @@ function renderReport(){
 }
 /** 전체 연습만 공식 기록으로 봅니다. 한 문장 연습까지 섞으면 수치가 부풀어요. */
 function isFull(a){ return (a.focus === undefined || a.focus < 0); }
+/** 너무 짧게 말하면 '분당 단어 수'가 뜻을 잃습니다. */
+function paceKnown(a){ return a.seconds >= 5 && a.wpm > 0; }
 function bestOf(mode){
   const list = S.attempts.filter(a=>(a.mode||'show')===mode && isFull(a));
   return list.length ? list.reduce((a,b)=> b.accuracy>=a.accuracy?b:a) : null;
