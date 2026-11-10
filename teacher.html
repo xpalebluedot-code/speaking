@@ -176,6 +176,7 @@ h3{font-size:12px;margin:0;letter-spacing:.07em;text-transform:uppercase;color:v
       <div class="spread">
         <h3 id="board-title">진행 현황</h3>
         <div class="row">
+          <select id="pick-date" aria-label="날짜"></select>
           <select id="pick-grade" aria-label="학년">
             <option value="1">1학년</option><option value="2">2학년</option>
           </select>
@@ -218,7 +219,7 @@ const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-let PIN='', GRADE=1, DATA=null, SEL=null, autoOn=true, timer=null, fetching=false;
+let PIN='', GRADE=1, DAY=null, DATA=null, SEL=null, autoOn=true, timer=null, fetching=false;
 
 /* ---------- 테마 ---------- */
 (function(){
@@ -262,10 +263,11 @@ $('#btn-enter').addEventListener('click', async ()=>{
 });
 
 $('#pick-grade').addEventListener('change', ()=>{
-  GRADE = +$('#pick-grade').value; SEL=null;
+  GRADE = +$('#pick-grade').value; SEL=null; DAY=null;   // 학년을 바꾸면 그 학년의 최근 날로
   try{ localStorage.setItem('s3s:grade',String(GRADE)); }catch(e){}
   load();
 });
+$('#pick-date').addEventListener('change', ()=>{ DAY = $('#pick-date').value; SEL=null; load(); });
 
 /* ---------- 불러오기 ---------- */
 async function load(isGate){
@@ -274,7 +276,7 @@ async function load(isGate){
   try{
     const res = await fetch(API_URL, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ action:'roster', pin:PIN, grade:GRADE })
+      body: JSON.stringify({ action:'roster', pin:PIN, grade:GRADE, day:DAY })
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     const r = await res.json();
@@ -320,7 +322,15 @@ function render(){
   const totalTry = inList.reduce((a,n)=>a+(Number(by[n].attempts)||0),0);
   const hideTried = inList.filter(n=>(Number(by[n].hideCount)||0)>0);
 
-  $('#board-title').textContent = `${DATA.grade}학년 진행 현황 · ${DATA.activity||''}`;
+  DAY = DATA.day || null;
+  const dates = DATA.dates && DATA.dates.length ? DATA.dates : (DAY ? [DAY] : []);
+  const sel = $('#pick-date');
+  sel.innerHTML = dates.map(d=>`<option value="${d}">${d===DATA.today?'오늘':d}</option>`).join('')
+    || `<option value="">기록 없음</option>`;
+  sel.value = DAY || '';
+  const isToday = (DAY === DATA.today);
+  $('#board-title').textContent =
+    `${DATA.grade}학년 · ${isToday ? '오늘' : (DAY||'')} 진행 현황`;
 
   $('#sums').innerHTML = `
     <div class="sum"><div class="k">전체</div><div class="v">${size}<span class="u">명</span></div></div>
@@ -343,7 +353,7 @@ function render(){
     return `<button class="tile ${cls} ${SEL===n?'on':''}" data-n="${n}">
       <div class="n">${n}${off?' <span class="warn">명단 밖</span>':''}</div>
       <div class="nm">${esc(s.name)}</div>
-      <div class="meta">연습 ${Number(s.attempts)||0}회${(Number(s.hideCount)||0)?` · 숨김 ${s.hideCount}`:''}</div>
+      <div class="meta">연습 ${Number(s.attempts)||0}회${(Number(s.hideCount)||0)?` · 숨김 ${s.hideCount}`:''}${(Number(s.rows)||1)>1?` · 제출 ${s.rows}번`:''}</div>
       <div class="bar"><i style="width:${Math.min(100,best)}%"></i></div>
       <div class="meta">${best?best+'%':'—'}</div>
     </button>`;
@@ -370,7 +380,7 @@ function renderDetail(s){
       <div class="head">
         <span class="who">${s.num}번 ${esc(s.name)}</span>
         <span class="pill ${s.status==='제출함'?'done':'work'}">${esc(s.status||'작성 중')}</span>
-        <span class="muted">연습 ${Number(s.attempts)||0}회 · 원고 숨김 ${Number(s.hideCount)||0}회 · 점검 ${esc(s.checks||'–')}</span>
+        <span class="muted">연습 ${Number(s.attempts)||0}회 · 원고 숨김 ${Number(s.hideCount)||0}회 · 점검 ${esc(s.checks||'–')}${(Number(s.rows)||1)>1?` · 이 날 ${s.rows}번 제출`:''}</span>
         <button class="btn quiet sm" id="btn-close" style="margin-left:auto">닫기</button>
       </div>
       <div class="body">

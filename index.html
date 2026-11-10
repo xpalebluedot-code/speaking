@@ -767,6 +767,8 @@ const S = {
   attempts: [],      // {n, mode, seconds, accuracy, wpm, pauses, pauseList, longest, hints, transcript, per}
   last:null,
   viewing:-1,        // 결과 화면에서 보고 있는 연습 (S.attempts 의 번호)
+  round:1,           // 그날 몇 번째 제출인지
+  roundDay:'',       // 그 차례가 어느 날 것인지
   checks:{}, reflect:{r1:'',r2:'',r3:''},
   submitted:false,
   undoStack:[]
@@ -833,7 +835,8 @@ function save(){
     const k = storeKey(); if(!k) return;
     localStorage.setItem(k, JSON.stringify({
       name:S.student.name, sentences:S.sentences, attempts:S.attempts,
-      checks:S.checks, reflect:S.reflect, submitted:S.submitted
+      checks:S.checks, reflect:S.reflect, submitted:S.submitted,
+      round:S.round, roundDay:S.roundDay
     }));
   }catch(e){}
 }
@@ -870,7 +873,7 @@ function go(n){
     b.disabled = !canGo(t).ok;
   });
   if(n===2) setupStage();
-  if(n===3) renderReport();
+  if(n===3){ needReport = false; renderReport(); }   // 결과를 봤으니 다음 연습을 풀어 줍니다
   if(n===4) renderChecks();
   if(n===5) renderReview();
   renderNav();
@@ -1077,9 +1080,19 @@ $('#btn-enter').addEventListener('click', ()=>{
     S.attempts  = prev.attempts  || [];
     S.checks    = prev.checks    || {};
     S.reflect   = prev.reflect   || S.reflect;
+    S.round     = prev.round     || 1;
+    S.roundDay  = prev.roundDay  || '';
 
     S.last      = S.attempts.length ? S.attempts[S.attempts.length-1] : null;
     S.viewing   = S.attempts.length - 1;
+  }
+  // 날이 바뀌면 새 차시로 봅니다 — 제출 차례와 연습 기록을 새로 시작합니다
+  const d = new Date();
+  const dayKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if(S.roundDay !== dayKey){
+    S.roundDay = dayKey; S.round = 1;
+    S.attempts = []; S.last = null; S.viewing = -1; S.checks = {};
+    save();
   }
   $('#who').hidden=false; $('#who').textContent = `${S.student.grade}학년 ${S.student.num}번 ${S.student.name}`;
   updateModePill();
@@ -2092,6 +2105,7 @@ function buildPayload(action, oneAttempt){
     attempt: oneAttempt ? slim(oneAttempt) : null,
     attempts: oneAttempt ? null : S.attempts.map(slim),
     lastTranscript:S.last?S.last.transcript:'',
+    round:S.round,
     checks:CHECKS.map(c=>({id:c.id,label:c.t,ok:!!S.checks[c.id]})),
     reflect:S.reflect
   };
@@ -2151,15 +2165,22 @@ $('#btn-submit').addEventListener('click', async ()=>{
   try{
     const r = await post(buildPayload('submit'));
     if(!r || r.ok!==true) throw new Error(r&&r.error?r.error:'서버가 응답하지 않았어요');
-    S.submitted=true; save(); showSaveState('ok');
-    $('#done-sub').textContent = `${S.student.grade}학년 ${S.student.num}번 ${S.student.name} · 연습 ${S.attempts.length}회`;
+    const n = S.attempts.length;
+    $('#done-sub').textContent =
+      `${S.student.grade}학년 ${S.student.num}번 ${S.student.name} · 연습 ${n}회` +
+      (S.round > 1 ? ` · 오늘 ${S.round}번째 제출` : '');
+    // 다음 제출은 새 줄로 쌓이도록, 차례를 올리고 연습 기록을 새로 시작합니다
+    S.submitted = true; S.round += 1;
+    S.attempts = []; S.last = null; S.viewing = -1; S.checks = {};
+    lastSent = '';
+    save(); showSaveState('ok');
     go(6);
   }catch(e){
     btn.disabled=false; btn.textContent='다시 제출하기';
     alertBox('#submit-msg','제출하지 못했어요: '+e.message+' 인터넷 연결을 확인하고 다시 눌러 주세요.','err');
   }
 });
-$('#btn-next-round').addEventListener('click', ()=>{ S.submitted=false; go(2); });
+$('#btn-next-round').addEventListener('click', ()=>{ S.submitted=false; go(2); resetStage(); });
 
 /* --- 끝내고 나가기 — 이 기기에 남은 내 기록을 지웁니다 --- */
 let wipeArmed = false;
