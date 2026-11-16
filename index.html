@@ -367,7 +367,7 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
     <div class="stack">
       <div>
         <h2>준비하기</h2>
-        <p class="lead">학년·번호·이름을 넣어 주세요. 쓴 내용은 이 기기에 자동 저장됩니다.</p>
+        <p class="lead">학년과 번호를 골라 주세요. 쓴 내용은 이 기기에 자동 저장됩니다.</p>
       </div>
 
       <div class="stack tight">
@@ -395,10 +395,6 @@ textarea.reflect{width:100%;border:1px solid var(--line);border-radius:8px;paddi
             <label for="f-num">번호</label>
             <select id="f-num"></select>
           </div>
-        </div>
-        <div class="field">
-          <label for="f-name">이름</label>
-          <input id="f-name" type="text" autocomplete="off" placeholder="예) 김민준">
         </div>
       </div>
 
@@ -834,7 +830,7 @@ function save(){
   try{
     const k = storeKey(); if(!k) return;
     localStorage.setItem(k, JSON.stringify({
-      name:S.student.name, sentences:S.sentences, attempts:S.attempts,
+      sentences:S.sentences, attempts:S.attempts,
       checks:S.checks, reflect:S.reflect, submitted:S.submitted,
       round:S.round, roundDay:S.roundDay
     }));
@@ -948,11 +944,10 @@ function scriptReady(){
   return { ok:true, msg:`모두 작성됨 · ${total}단어` };
 }
 function infoReady(){
-  const name = ($('#f-name').value || (S.student && S.student.name) || '').trim();
-  if(!name) return { ok:false, msg:'이름을 적어 주세요' };
   const g = S.student ? S.student.grade : $('#f-grade').value;
   const n = S.student ? S.student.num : $('#f-num').value;
-  return { ok:true, msg:`${g}학년 ${n}번 ${name}` };
+  if(!g || !n) return { ok:false, msg:'학년과 번호를 골라 주세요' };
+  return { ok:true, msg:`${g}학년 ${n}번` };
 }
 function mediaReady(){
   if(MEDIA.error) return { ok:false, msg:MEDIA.error };
@@ -998,7 +993,6 @@ function renderReady(){
     g.disabled = needReport || !scriptReady().ok || !speechReady().ok;
   }
 }
-$('#f-name').addEventListener('input', renderReady);
 $('#f-grade').addEventListener('change', renderReady);
 $('#f-num').addEventListener('change', renderReady);
 
@@ -1071,11 +1065,9 @@ if(!ONLINE){
 }
 
 $('#btn-enter').addEventListener('click', ()=>{
-  const name = $('#f-name').value.trim();
-  if(!name){ $('#f-name').focus(); return; }
-  S.student = { grade:+$('#f-grade').value, num:+$('#f-num').value, name };
+  S.student = { grade:+$('#f-grade').value, num:+$('#f-num').value };
   const prev = load();
-  if(prev && prev.name === name){
+  if(prev){
     S.sentences = prev.sentences || S.sentences;
     S.attempts  = prev.attempts  || [];
     S.checks    = prev.checks    || {};
@@ -1094,7 +1086,7 @@ $('#btn-enter').addEventListener('click', ()=>{
     S.attempts = []; S.last = null; S.viewing = -1; S.checks = {};
     save();
   }
-  $('#who').hidden=false; $('#who').textContent = `${S.student.grade}학년 ${S.student.num}번 ${S.student.name}`;
+  $('#who').hidden=false; $('#who').textContent = `${S.student.grade}학년 ${S.student.num}번`;
   updateModePill();
   ['r1','r2','r3'].forEach(k=> $('#'+k).value = S.reflect[k] || '');
   renderSentences();
@@ -2094,7 +2086,7 @@ function buildPayload(action, oneAttempt){
                     accuracy:a.accuracy, wpm:a.wpm, pauses:a.pauses, hints:a.hints});
   return {
     action, activity:CONFIG.ACTIVITY,
-    grade:S.student.grade, num:S.student.num, name:S.student.name,
+    grade:S.student.grade, num:S.student.num,
     sentences:S.sentences,
     attemptCount:S.attempts.length,
     hideCount:S.attempts.filter(a=>a.mode==='hide' && isFull(a)).length,
@@ -2167,7 +2159,7 @@ $('#btn-submit').addEventListener('click', async ()=>{
     if(!r || r.ok!==true) throw new Error(r&&r.error?r.error:'서버가 응답하지 않았어요');
     const n = S.attempts.length;
     $('#done-sub').textContent =
-      `${S.student.grade}학년 ${S.student.num}번 ${S.student.name} · 연습 ${n}회` +
+      `${S.student.grade}학년 ${S.student.num}번 · 연습 ${n}회` +
       (S.round > 1 ? ` · 오늘 ${S.round}번째 제출` : '');
     // 다음 제출은 새 줄로 쌓이도록, 차례를 올리고 연습 기록을 새로 시작합니다
     S.submitted = true; S.round += 1;

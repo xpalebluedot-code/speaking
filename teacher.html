@@ -352,7 +352,6 @@ function render(){
     const best = Math.max(Number(s.accHide)||0, Number(s.accShow)||0);
     return `<button class="tile ${cls} ${SEL===n?'on':''}" data-n="${n}">
       <div class="n">${n}${off?' <span class="warn">명단 밖</span>':''}</div>
-      <div class="nm">${esc(s.name)}</div>
       <div class="meta">연습 ${Number(s.attempts)||0}회${(Number(s.hideCount)||0)?` · 숨김 ${s.hideCount}`:''}${(Number(s.rows)||1)>1?` · 제출 ${s.rows}번`:''}</div>
       <div class="bar"><i style="width:${Math.min(100,best)}%"></i></div>
       <div class="meta">${best?best+'%':'—'}</div>
@@ -378,7 +377,7 @@ function renderDetail(s){
   w.innerHTML = `
     <div class="detail">
       <div class="head">
-        <span class="who">${s.num}번 ${esc(s.name)}</span>
+        <span class="who">${s.num}번${s.name?' '+esc(s.name):''}</span>
         <span class="pill ${s.status==='제출함'?'done':'work'}">${esc(s.status||'작성 중')}</span>
         <span class="muted">연습 ${Number(s.attempts)||0}회 · 원고 숨김 ${Number(s.hideCount)||0}회 · 점검 ${esc(s.checks||'–')}${(Number(s.rows)||1)>1?` · 이 날 ${s.rows}번 제출`:''}</span>
         <button class="btn quiet sm" id="btn-close" style="margin-left:auto">닫기</button>
