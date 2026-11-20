@@ -2095,7 +2095,8 @@ function buildPayload(action, oneAttempt){
     bestHide: bh?{accuracy:bh.accuracy,seconds:bh.seconds,wpm:bh.wpm,pauses:bh.pauses,hints:bh.hints}:null,
     // 방금 끝난 연습 하나만 보내면 서버가 그것만 기록합니다
     attempt: oneAttempt ? slim(oneAttempt) : null,
-    attempts: oneAttempt ? null : S.attempts.map(slim),
+    // 이미 시트에 들어간 연습은 다시 보내지 않습니다 — 한 반이 한꺼번에 제출해도 서버가 밀리지 않도록
+    attempts: oneAttempt ? null : S.attempts.filter(a=>!a.sent).map(slim),
     lastTranscript:S.last?S.last.transcript:'',
     round:S.round,
     checks:CHECKS.map(c=>({id:c.id,label:c.t,ok:!!S.checks[c.id]})),
@@ -2122,6 +2123,17 @@ function showSaveState(state){
   else el.hidden = true;
 }
 
+/**
+ * 시트에 무사히 들어간 연습에 표시를 해 둡니다.
+ * 제출할 때 이미 들어간 것까지 다시 보내면 서버가 같은 줄을 몇 번씩 찾아 쓰게 됩니다.
+ * 저장이 실패한 연습은 표시가 남지 않으므로 제출할 때 다시 올라갑니다.
+ */
+function markSent(oneAttempt){
+  if(oneAttempt){ oneAttempt.sent = true; }
+  else S.attempts.forEach(a=> a.sent = true);
+  save();
+}
+
 /** 조금 기다렸다 저장합니다. 타이핑 중에 매번 보내지 않도록 모았다가 보냅니다. */
 function queueSave(delay){
   if(!ONLINE || !S.student) return;
@@ -2140,6 +2152,7 @@ async function doSave(oneAttempt){
   try{
     const r = await post(payload);
     if(!r || r.ok!==true) throw new Error(r&&r.error?r.error:'서버가 응답하지 않았어요');
+    markSent(oneAttempt);
     savedOnce = true; lastSent = body; showSaveState('ok');
   }catch(e){
     showSaveState('fail');
